@@ -1,0 +1,20 @@
+{
+  "name": "@dejoiy/tools",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@dejoiy/embeddings": "workspace:*",
+    "@dejoiy/git-engine": "workspace:*",
+    "@dejoiy/terminal-engine": "workspace:*",
+    "@dejoiy/workspace-engine": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

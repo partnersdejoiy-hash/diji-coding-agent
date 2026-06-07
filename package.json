@@ -1,0 +1,27 @@
+{
+  "name": "dejoiy-codeagent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DEJOIY-CodeAgent - Production-grade AI coding platform",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "db:generate": "pnpm --filter @dejoiy/database prisma generate",
+    "db:migrate": "pnpm --filter @dejoiy/database prisma migrate dev",
+    "db:push": "pnpm --filter @dejoiy/database prisma db push",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:build": "docker compose build"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

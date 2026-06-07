@@ -1,0 +1,73 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: dejoiy
+      POSTGRES_PASSWORD: dejoiy_secret
+      POSTGRES_DB: dejoiy_codeagent
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dejoiy"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  chroma:
+    image: chromadb/chroma:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      ANONYMIZED_TELEMETRY: "false"
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: postgresql://dejoiy:dejoiy_secret@postgres:5432/dejoiy_codeagent
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      CHROMA_HOST: chroma
+      CHROMA_PORT: 8000
+      CORS_ORIGIN: http://localhost:3000
+      WORKSPACE_ROOT: /app/workspaces
+      API_PORT: 4000
+    volumes:
+      - workspace_data:/app/workspaces
+    depends_on:
+      postgres:
+        condition: service_healthy
+      chroma:
+        condition: service_started
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    depends_on:
+      - api
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+      - web
+
+volumes:
+  postgres_data:
+  chroma_data:
+  workspace_data:
