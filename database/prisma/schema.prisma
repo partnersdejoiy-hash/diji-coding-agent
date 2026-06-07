@@ -1,0 +1,219 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DEVELOPER
+  VIEWER
+}
+
+enum ChatMode {
+  CHAT
+  ASK
+  AGENT
+  REFACTOR
+  EXPLAIN
+}
+
+enum AgentRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum IndexJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(DEVELOPER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  settings     UserSettings?
+  workspaces   Workspace[]
+  sessions     Session[]
+  chatMessages ChatMessage[]
+  agentRuns    AgentRun[]
+  memories     LongTermMemory[]
+}
+
+model UserSettings {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  openaiApiKey    String?
+  model           String  @default("gpt-4o")
+  temperature     Float   @default(0.7)
+  maxTokens       Int     @default(4096)
+  autonomyLevel   Int     @default(3)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  rootPath    String
+  gitUrl      String?
+  userId      String
+  isIndexed   Boolean  @default(false)
+  lastIndexed DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  files        FileEntry[]
+  chatMessages ChatMessage[]
+  agentRuns    AgentRun[]
+  indexJobs    IndexJob[]
+  memories     LongTermMemory[]
+
+  @@index([userId])
+}
+
+model FileEntry {
+  id          String   @id @default(cuid())
+  workspaceId String
+  path        String
+  name        String
+  isDirectory Boolean  @default(false)
+  content     String?
+  language    String?
+  size        Int      @default(0)
+  hash        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, path])
+  @@index([workspaceId])
+}
+
+model ChatMessage {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        String
+  content     String
+  mode        ChatMode @default(CHAT)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+model AgentRun {
+  id          String         @id @default(cuid())
+  workspaceId String
+  userId      String
+  task        String
+  plan        Json?
+  status      AgentRunStatus @default(PENDING)
+  steps       Json           @default("[]")
+  result      String?
+  error       String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime       @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+model IndexJob {
+  id          String         @id @default(cuid())
+  workspaceId String
+  status      IndexJobStatus @default(PENDING)
+  totalFiles  Int            @default(0)
+  processed   Int            @default(0)
+  error       String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime       @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+model LongTermMemory {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String?
+  category    String
+  key         String
+  value       String
+  embedding   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([userId, category, key])
+}
+
+model ShortTermMemory {
+  id          String   @id @default(cuid())
+  sessionId   String   @unique
+  workspaceId String
+  task        String?
+  currentFiles Json    @default("[]")
+  conversation Json    @default("[]")
+  context     Json?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId])
+}
+
+model EmbeddingCache {
+  id        String   @id @default(cuid())
+  hash      String   @unique
+  content   String
+  embedding String
+  createdAt DateTime @default(now())
+
+  @@index([hash])
+}

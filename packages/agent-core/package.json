@@ -1,0 +1,24 @@
+{
+  "name": "@dejoiy/agent-core",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@dejoiy/database": "workspace:*",
+    "@dejoiy/embeddings": "workspace:*",
+    "@dejoiy/memory": "workspace:*",
+    "@dejoiy/prompts": "workspace:*",
+    "@dejoiy/tools": "workspace:*",
+    "@dejoiy/workspace-engine": "workspace:*",
+    "openai": "^4.77.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

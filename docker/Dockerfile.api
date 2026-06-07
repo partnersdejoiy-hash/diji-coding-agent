@@ -1,0 +1,27 @@
+FROM node:20-alpine AS base
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+WORKDIR /app
+
+FROM base AS deps
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
+COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
+COPY packages/*/package.json ./packages/
+COPY database/package.json ./database/
+RUN pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+
+FROM base AS builder
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN pnpm db:generate
+RUN pnpm build
+
+FROM base AS api
+COPY --from=builder /app ./
+EXPOSE 4000
+CMD ["pnpm", "--filter", "@dejoiy/api", "start"]
+
+FROM base AS web
+COPY --from=builder /app ./
+EXPOSE 3000
+CMD ["pnpm", "--filter", "@dejoiy/web", "start"]
