@@ -1,33 +1,35 @@
-// Diji, the mascot: a squishy gradient squircle with a spark antenna, drawn from the Dejoiy "D" smile.
-// Moods: idle, thinking, happy, oops. Set with setMood(el, mood).
-let uid = 0;
+// Diji, the mascot: a pink mochi with a little sprout, printed in two inks (Dejoiy pink and blue).
+// The blue plate sits a hair off-register behind the pink one, like a risograph print.
+// Moods: idle, thinking (squishes), happy (hops, eyes curve), oops (wobbles, mouth flat).
+
+const BODY = "M9 47.5C9 30 18.5 17 32 17s23 13 23 30.5c0 6.8-6.5 9.5-23 9.5S9 54.3 9 47.5Z";
 
 export function diji(size = 40, mood = "idle") {
-  const g = `dg${++uid}`;
   return `<span class="diji mood-${mood}" style="--s:${size}px" role="img" aria-label="Diji">
 <svg viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true">
-  <defs>
-    <linearGradient id="${g}" x1="8" y1="6" x2="58" y2="60" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#F0218F"/><stop offset=".55" stop-color="#8B3DF0"/><stop offset="1" stop-color="#2F6BFF"/>
-    </linearGradient>
-  </defs>
   <g class="d-bob">
-    <g class="d-antenna"><path d="M32 12V5" stroke="#8B3DF0" stroke-width="3" stroke-linecap="round"/><circle class="d-spark" cx="32" cy="4.5" r="3.6" fill="#FFC93D"/></g>
-    <rect x="6" y="11" width="52" height="47" rx="17" fill="url(#${g})"/>
-    <path d="M14 22c2-6 7-8.5 14-8.5" stroke="#fff" stroke-opacity=".35" stroke-width="3" stroke-linecap="round" fill="none"/>
-    <g class="d-eyes">
-      <g class="d-open">
-        <ellipse cx="23.5" cy="32" rx="5.6" ry="6.6" fill="#fff"/><ellipse cx="40.5" cy="32" rx="5.6" ry="6.6" fill="#fff"/>
-        <g class="d-pupils"><circle cx="24.6" cy="33" r="2.9" fill="#121845"/><circle cx="41.6" cy="33" r="2.9" fill="#121845"/>
-        <circle cx="25.6" cy="31.8" r=".95" fill="#fff"/><circle cx="42.6" cy="31.8" r=".95" fill="#fff"/></g>
+    <g class="d-squish">
+      <path class="d-plate-blue" d="${BODY}" transform="translate(2.2 1.6)"/>
+      <path class="d-plate-pink" d="${BODY}"/>
+      <path class="d-shine" d="M17 31c1.6-5.4 5.6-9.2 11-10.4" fill="none" stroke-width="2.6" stroke-linecap="round"/>
+      <g class="d-sprout">
+        <path class="d-stem" d="M32 17.5c0-3.4.6-5.8 2-8" fill="none" stroke-width="2.2" stroke-linecap="round"/>
+        <path class="d-leaf" d="M34 9.6c1.3-3.3 4.6-4.9 8.2-4.3-.9 3.6-4.2 5.6-8.2 4.3Z"/>
+        <path class="d-leaf" d="M33.4 11.4c-1.9-2.7-5.1-3.4-7.9-2 1.6 2.7 4.8 3.6 7.9 2Z"/>
       </g>
-      <g class="d-joy" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round">
-        <path d="M18.5 33.5q5-6.5 10 0"/><path d="M35.5 33.5q5-6.5 10 0"/>
+      <g class="d-face">
+        <g class="d-open">
+          <ellipse class="d-eye" cx="24.5" cy="38" rx="2.7" ry="3.3"/><ellipse class="d-eye" cx="39.5" cy="38" rx="2.7" ry="3.3"/>
+          <circle class="d-glint" cx="25.4" cy="36.8" r=".9"/><circle class="d-glint" cx="40.4" cy="36.8" r=".9"/>
+        </g>
+        <g class="d-joy" fill="none" stroke-width="2.4" stroke-linecap="round">
+          <path d="M21.6 38.8q2.9-3.6 5.8 0"/><path d="M36.6 38.8q2.9-3.6 5.8 0"/>
+        </g>
+        <ellipse class="d-cheek" cx="18.6" cy="43.4" rx="3.2" ry="2"/><ellipse class="d-cheek" cx="45.4" cy="43.4" rx="3.2" ry="2"/>
+        <path class="d-smile" d="M29 43.2q1.5 1.9 3 0q1.5 1.9 3 0" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+        <path class="d-flat" d="M29 44.4h6" fill="none" stroke-width="1.9" stroke-linecap="round"/>
       </g>
     </g>
-    <circle cx="16" cy="42" r="3.2" fill="#FF8FC8" opacity=".55"/><circle cx="48" cy="42" r="3.2" fill="#FF8FC8" opacity=".55"/>
-    <path class="d-smile" d="M25 43.5q7 6.5 14 0" stroke="#fff" stroke-width="3.2" stroke-linecap="round" fill="none"/>
-    <path class="d-flat" d="M26.5 45.5h11" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
   </g>
 </svg></span>`;
 }

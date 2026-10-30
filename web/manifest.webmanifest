@@ -3,7 +3,7 @@
   "short_name": "Diji",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0B0E1F",
-  "theme_color": "#0B0E1F",
+  "background_color": "#F5F1EA",
+  "theme_color": "#F5F1EA",
   "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
 }

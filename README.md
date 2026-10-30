@@ -10,7 +10,7 @@
 
 </div>
 
-![Diji building a landing page with live preview](docs/desktop-dark.jpg)
+![Diji building a landing page with live preview](docs/desktop.jpg)
 
 ## What it does
 
@@ -25,7 +25,7 @@
 
 | Phone | Skills | Cloud browser |
 |---|---|---|
-| ![Phone](docs/phone-dark.jpg) | ![Skills](docs/skills.jpg) | ![Cloud browser](docs/cloud-browser.jpg) |
+| ![Phone](docs/phone.jpg) | ![Skills](docs/skills.jpg) | ![Cloud browser](docs/cloud-browser.jpg) |
 
 ## Architecture
 

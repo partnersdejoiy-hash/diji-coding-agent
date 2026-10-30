@@ -237,7 +237,7 @@ function fillAssistant(node, m) {
   const foot = node.querySelector(".msg-foot");
   setMood(node.querySelector(".avatar"), m.error ? "oops" : m.streaming ? "thinking" : "idle");
   if (!m.content && m.streaming) {
-    content.innerHTML = `<div class="thinking"><span>Diji is thinking</span><span class="dots"><i></i><i></i><i></i></span></div>`;
+    content.innerHTML = `<div class="thinking"><span>Diji is thinking…</span></div>`;
   } else {
     let html = "";
     for (const s of segments(m.content)) {
@@ -383,7 +383,9 @@ function renderModelBtn() {
 function renderSkillsBtn() {
   const pinned = state.settings.skills.length;
   const label = pinned ? `${pinned} skill${pinned > 1 ? "s" : ""}${state.settings.autoSkills ? " + auto" : ""}` : state.settings.autoSkills ? "Auto skills" : "No skills";
-  $("#skills-btn").innerHTML = `${icon("sparkles", 15)}<span>${label}</span>`;
+  const short = pinned ? `${pinned}${state.settings.autoSkills ? "+auto" : ""}` : state.settings.autoSkills ? "Auto" : "0";
+  $("#skills-btn").innerHTML = `${icon("sparkles", 15)}<span class="lbl-full">${label}</span><span class="lbl-short">${short}</span>`;
+  $("#skills-btn").setAttribute("aria-label", `Skills: ${label}`);
   $("#skills-count").textContent = String(pinned || "");
 }
 
