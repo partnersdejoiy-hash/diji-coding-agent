@@ -6,7 +6,7 @@
 
 **An open coding agent by [Dejoiy](https://dejoiy.com).** Works with every major AI provider and any open-source model, writes real files with a live preview, follows 28 built-in skills, and drives its own cloud browser.
 
-[**Deploy the app on Vercel**](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fpartnersdejoiy-hash%2Fdiji-coding-agent&root-directory=web&project-name=diji) · [Run the server on Oracle Cloud (free)](#2-cloud-server-on-oracle-always-free)
+**Live: [diji-pi.vercel.app](https://diji-pi.vercel.app)** · [**Deploy your own on Vercel**](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fpartnersdejoiy-hash%2Fdiji-coding-agent&root-directory=web&project-name=diji) · [Run the server on Oracle Cloud (free)](#2-cloud-server-on-oracle-always-free)
 
 </div>
 
