@@ -16,6 +16,17 @@ before(async () => {
     let body = "";
     req.on("data", (c) => (body += c));
     req.on("end", () => {
+      if (req.url.startsWith("/v13/deployments")) {
+        res.writeHead(req.headers.authorization === "Bearer vc-good" ? 200 : 403, { "content-type": "application/json" });
+        if (req.headers.authorization !== "Bearer vc-good") return res.end(JSON.stringify({ error: { message: "Not authorized" } }));
+        if (req.method === "POST") {
+          const j = JSON.parse(body);
+          assert.equal(j.name, "my-site");
+          assert.deepEqual(j.files.map((f) => f.file), ["index.html", "app.js"]);
+          return res.end(JSON.stringify({ id: "dpl_1", readyState: "BUILDING", url: "my-site-abc.vercel.app" }));
+        }
+        return res.end(JSON.stringify({ id: "dpl_1", readyState: "READY", url: "my-site-abc.vercel.app", alias: ["my-site-git-main-me.vercel.app", "my-site.vercel.app"] }));
+      }
       if (req.url.endsWith("/models")) {
         res.writeHead(200, { "content-type": "application/json" });
         return res.end(JSON.stringify({ data: [{ id: "fake-b" }, { id: "fake-a" }] }));
@@ -34,7 +45,7 @@ before(async () => {
   await new Promise((r) => fake.listen(0, "127.0.0.1", r));
   fakeUrl = `http://127.0.0.1:${fake.address().port}/v1`;
   server = spawn(process.execPath, [fileURLToPath(new URL("../index.js", import.meta.url))], {
-    env: { ...process.env, PORT: String(PORT), ALLOW_LOCAL_LLM: "1" },
+    env: { ...process.env, PORT: String(PORT), ALLOW_LOCAL_LLM: "1", DIJI_VERCEL_API: fakeUrl.replace("/v1", "") },
     stdio: "pipe",
   });
   for (let i = 0; i < 50; i++) {
@@ -101,4 +112,20 @@ test("cloud browser renders a page and returns a screenshot", async () => {
   assert.ok(j.shot.length > 1000);
   const read = await (await post("/api/browser/read", { sessionId: "test-session-2" })).json();
   assert.match(read.text, /Diji browser works/);
+});
+
+test("deploys a workspace to Vercel with the user's token and returns the live link", async () => {
+  const res = await post("/api/deploy", { token: "vc-good", name: "my-site", files: { "index.html": "<h1>hi</h1>", "app.js": "1" } });
+  const j = await res.json();
+  assert.equal(res.status, 200, j.error);
+  assert.equal(j.url, "https://my-site.vercel.app");
+  assert.equal(j.ready, true);
+});
+
+test("deploy explains a bad Vercel token and rejects bad names", async () => {
+  const bad = await post("/api/deploy", { token: "nope", name: "my-site", files: { "index.html": "x" } });
+  assert.equal(bad.status, 403);
+  assert.match((await bad.json()).error, /Vercel token/);
+  const name = await post("/api/deploy", { token: "vc-good", name: "My Site!", files: { "index.html": "x" } });
+  assert.equal(name.status, 400);
 });

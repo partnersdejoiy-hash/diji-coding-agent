@@ -86,7 +86,9 @@
         </div>
         <div class="panel-actions">
           <button class="icon-btn" id="open-tab" aria-label="Open preview in a new tab"></button>
-          <button class="icon-btn" id="zip-btn" aria-label="Download all files as ZIP"></button>
+          <button class="icon-btn" id="gh-push-btn" aria-label="Push to GitHub" aria-haspopup="dialog" title="Push to GitHub"></button>
+          <button class="icon-btn" id="vercel-btn" aria-label="Deploy to Vercel" aria-haspopup="dialog" title="Deploy to Vercel"></button>
+          <button class="icon-btn" id="zip-btn" aria-label="Download all files as ZIP" title="Download ZIP"></button>
           <button class="icon-btn" id="panel-close" aria-label="Close panel"></button>
         </div>
       </div>
@@ -96,6 +98,7 @@
 
   <div class="popover" id="model-pop" role="listbox" aria-label="Choose a model" hidden></div>
   <div class="popover notif-pop" id="notif-pop" role="dialog" aria-label="Notifications" hidden></div>
+  <div class="popover ship-pop" id="ship-pop" role="dialog" aria-labelledby="ship-title" hidden></div>
   <dialog class="modal" id="settings-modal" aria-labelledby="settings-title"></dialog>
   <dialog class="modal" id="skills-modal" aria-labelledby="skills-title"></dialog>
   <div class="toasts" id="toasts" aria-live="polite"></div>

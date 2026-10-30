@@ -41,6 +41,7 @@ export function openSettings(tab = currentTab, providerId) {
   const tabs = [
     ["models", "Models & keys", "key"],
     ["cloud", "Cloud server", "cloud"],
+    ["deploy", "GitHub & Vercel", "github"],
     ["prefs", "Preferences", "settings"],
     ["data", "Data & privacy", "layers"],
   ];
@@ -57,7 +58,7 @@ export function openSettings(tab = currentTab, providerId) {
   );
   dialog.querySelectorAll(".snav").forEach((b) => (b.onclick = () => openSettings(b.dataset.tab)));
   const body = $("#settings-body", dialog);
-  ({ models: renderModels, cloud: renderCloud, prefs: renderPrefs, data: renderData })[tab](body);
+  ({ models: renderModels, cloud: renderCloud, deploy: renderDeploy, prefs: renderPrefs, data: renderData })[tab](body);
 }
 
 function renderModels(body) {
@@ -196,6 +197,62 @@ function renderCloud(body) {
         : "Could not reach the server. Check the URL, that ports 80/443 are open in Oracle, and that the server is running.";
     }
   };
+}
+
+function renderDeploy(body) {
+  const g = providerSettings("github");
+  const v = providerSettings("vercel");
+  body.innerHTML = `
+    <h3>GitHub & Vercel</h3>
+    <p class="muted">Connect your own accounts to push what Diji builds to your GitHub and put it live on your Vercel. Tokens stay in this browser, like your API keys, and go only to GitHub and Vercel.</p>
+    <label class="field"><span>GitHub token</span>
+      <div class="input-row"><input type="password" id="dgh" value="${esc(g.key || "")}" placeholder="github_pat_… or ghp_…" autocomplete="off" spellcheck="false">
+      <button type="button" class="btn-ghost sm" data-check="github">${icon("check", 14)} Check</button></div>
+      <a class="hint-link" href="https://github.com/settings/tokens/new?scopes=repo&description=Diji%20coding%20agent" target="_blank" rel="noopener">Create a GitHub token (needs the “repo” scope) ${icon("external", 12)}</a>
+    </label>
+    <label class="field"><span>Vercel token</span>
+      <div class="input-row"><input type="password" id="dvc" value="${esc(v.key || "")}" placeholder="Paste your Vercel token" autocomplete="off" spellcheck="false">
+      <button type="button" class="btn-ghost sm" data-check="vercel">${icon("check", 14)} Check</button></div>
+      <a class="hint-link" href="https://vercel.com/account/settings/tokens" target="_blank" rel="noopener">Create a Vercel token ${icon("external", 12)}</a>
+    </label>
+    <label class="field"><span>Vercel team ID or slug <small class="muted">(optional, leave empty for your personal account)</small></span>
+      <input id="dteam" value="${esc(v.team || "")}" placeholder="team_… or my-team" spellcheck="false"></label>
+    <p class="note">${icon("info", 14)} Then open the workspace and use <strong>Push to GitHub</strong> or <strong>Deploy to Vercel</strong>.</p>
+    <p class="test-out" id="dout" aria-live="polite"></p>`;
+  const persist = () => {
+    g.key = $("#dgh", body).value.trim();
+    v.key = $("#dvc", body).value.trim();
+    v.team = $("#dteam", body).value.trim();
+    save();
+    onChange();
+  };
+  body.querySelectorAll("input").forEach((i) => i.addEventListener("change", persist));
+  body.querySelectorAll("[data-check]").forEach((b) => (b.onclick = async () => {
+    persist();
+    const out = $("#dout", body);
+    out.className = "test-out";
+    out.innerHTML = '<span class="spinner"></span> Checking…';
+    try {
+      if (b.dataset.check === "github") {
+        if (!g.key) throw new Error("Paste a GitHub token first.");
+        const res = await fetch("https://api.github.com/user", { headers: { authorization: `Bearer ${g.key}`, accept: "application/vnd.github+json" } });
+        const j = await res.json();
+        if (!res.ok) throw new Error(res.status === 401 ? "GitHub says this token is invalid or expired." : j.message || `GitHub answered ${res.status}.`);
+        out.className = "test-out ok";
+        out.textContent = `Connected to GitHub as @${j.login}.`;
+      } else {
+        if (!v.key) throw new Error("Paste a Vercel token first.");
+        const res = await fetch("https://api.vercel.com/v2/user", { headers: { authorization: `Bearer ${v.key}` } });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(res.status === 403 || res.status === 401 ? "Vercel says this token is invalid." : j.error?.message || `Vercel answered ${res.status}.`);
+        out.className = "test-out ok";
+        out.textContent = `Connected to Vercel as ${j.user?.username || j.user?.email || "you"}.`;
+      }
+    } catch (e) {
+      out.className = "test-out err";
+      out.textContent = e.message === "Failed to fetch" ? "Could not reach the service from this browser. The token is saved and Deploy will still try through Diji's server." : e.message;
+    }
+  }));
 }
 
 function renderPrefs(body) {

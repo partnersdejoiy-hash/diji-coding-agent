@@ -9,6 +9,7 @@ import { renderPreview, renderCode, buildPreview, zip, downloadBlob } from "./wo
 import { renderBrowser, cloud, browserCall, serverConfigured } from "./browser.js";
 import { loadSkills, activeSkills } from "./skills.js";
 import { openSettings, openSkills, onSettingsChange, isConnected } from "./settings.js";
+import { pushToGitHub, deployToVercel, githubToken, vercelToken, slug } from "./ship.js";
 import { toast, systemNotify, onNotificationsChange, unreadCount, markAllRead, clearNotifications } from "./notify.js";
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -50,6 +51,8 @@ function paintIcons() {
   $("#attach-btn").innerHTML = icon("clip");
   $("#open-tab").innerHTML = icon("external", 17);
   $("#zip-btn").innerHTML = icon("download", 17);
+  $("#gh-push-btn").innerHTML = icon("github", 17);
+  $("#vercel-btn").innerHTML = icon("cloudUp", 17);
   $("#panel-close").innerHTML = icon("x");
   $("#jump").innerHTML = icon("arrowDown", 18);
   $("#drop-ic").innerHTML = icon("upload", 28);
@@ -576,13 +579,14 @@ function placePop(pop, anchor) {
 function closePops() {
   $("#model-pop").hidden = true;
   $("#notif-pop").hidden = true;
+  if (!ui.shipping) $("#ship-pop").hidden = true;
 }
 $("#model-btn").onclick = (e) => {
   e.stopPropagation();
   $("#model-pop").hidden ? (closePops(), openModelPop()) : closePops();
 };
 document.addEventListener("click", (e) => {
-  if (!e.target.closest(".popover") && !e.target.closest("#model-btn") && !e.target.closest("#bell-btn")) closePops();
+  if (!e.target.closest(".popover") && !e.target.closest("#model-btn") && !e.target.closest("#bell-btn") && !e.target.closest("#gh-push-btn") && !e.target.closest("#vercel-btn")) closePops();
 });
 
 /* ---------- notifications ---------- */
@@ -654,7 +658,7 @@ function renderPanel() {
   const body = $("#panel-body");
   body.dataset.tab = ui.panelTab;
   const hasFiles = Object.keys(chat.files).length > 0;
-  $("#zip-btn").hidden = !hasFiles || ui.panelTab === "browser";
+  $("#zip-btn").hidden = $("#gh-push-btn").hidden = $("#vercel-btn").hidden = !hasFiles || ui.panelTab === "browser";
   $("#open-tab").hidden = ui.panelTab !== "preview" || !buildPreview(chat.files);
   if (body.dataset.rendered !== ui.panelTab) {
     body.innerHTML = "";
@@ -693,6 +697,83 @@ $("#open-tab").onclick = () => {
   const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
   open(url, "_blank", "noopener");
   setTimeout(() => URL.revokeObjectURL(url), 60000);
+};
+
+/* ---------- ship: GitHub and Vercel ---------- */
+function openShip(kind) {
+  const chat = activeChat();
+  if (!chat || !Object.keys(chat.files).length) return;
+  const isGh = kind === "github";
+  if (!(isGh ? githubToken() : vercelToken())) {
+    toast(`Connect your ${isGh ? "GitHub" : "Vercel"} account first.`, "info", { keep: false });
+    return openSettings("deploy");
+  }
+  chat.ship ||= {};
+  const prev = isGh ? chat.ship.github : chat.ship.vercel;
+  const name = prev?.name || slug(chat.title);
+  const pop = $("#ship-pop");
+  pop.innerHTML = `<form class="ship-form">
+    <h3 id="ship-title">${isGh ? "Push to GitHub" : "Deploy to Vercel"}</h3>
+    <p class="muted">${isGh
+      ? `Saves all ${Object.keys(chat.files).length} workspace files to a repository on your GitHub${prev ? `, as a new commit on <strong>${esc(prev.name)}</strong>` : ""}.`
+      : `Puts the workspace live on your Vercel account${prev ? ` and updates <strong>${esc(prev.name)}</strong>` : ""}.`}</p>
+    <label class="field"><span>${isGh ? "Repository name" : "Project name"}</span><input name="name" value="${esc(name)}" required spellcheck="false" autocomplete="off"></label>
+    ${isGh ? `<label class="switch"><input type="checkbox" name="priv"${prev?.private ? " checked" : ""}><span class="track"></span><span>Private repository</span></label>
+      <label class="field"><span>Commit message</span><input name="msg" value="${prev ? "Update from Diji" : "First version, built with Diji"}" autocomplete="off"></label>` : ""}
+    <div class="btn-row"><button class="btn-primary" type="submit">${icon(isGh ? "github" : "cloudUp", 16)} ${isGh ? "Push" : "Deploy"}</button>
+      <button class="btn-ghost" type="button" data-cancel>Cancel</button></div>
+    <p class="test-out" aria-live="polite"></p></form>`;
+  pop.hidden = false;
+  placePop(pop, $(isGh ? "#gh-push-btn" : "#vercel-btn"));
+  const form = pop.querySelector("form");
+  form.name.focus();
+  form.name.select();
+  form.querySelector("[data-cancel]").onclick = () => (pop.hidden = true);
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const out = form.querySelector(".test-out");
+    const btn = form.querySelector("[type=submit]");
+    const target = slug(form.name.value);
+    btn.disabled = true;
+    ui.shipping = true;
+    out.className = "test-out";
+    out.innerHTML = `<span class="spinner"></span> ${isGh ? "Pushing to GitHub…" : "Deploying, this takes a few seconds…"}`;
+    try {
+      if (isGh) {
+        const r = await pushToGitHub(chat.files, { repo: target, isPrivate: form.priv.checked, message: form.msg.value.trim() });
+        chat.ship.github = { name: r.repo, url: r.url, private: form.priv.checked };
+        out.className = "test-out ok";
+        out.innerHTML = `Pushed ${r.files} files to <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.fullName)}</a>.`;
+        toast(`${r.files} files are on GitHub in ${r.fullName}.`, "success", { title: "Pushed to GitHub", action: { label: "Open", run: () => open(r.url, "_blank", "noopener") } });
+        systemNotify("Pushed to GitHub", r.fullName);
+      } else {
+        const r = await deployToVercel(chat.files, { name: target });
+        chat.ship.vercel = { name: target, url: r.url };
+        out.className = "test-out ok";
+        out.innerHTML = `${r.ready ? "Live at" : "Building at"} <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url.replace("https://", ""))}</a>.`;
+        toast(r.ready ? `Your site is live at ${r.url.replace("https://", "")}.` : "Vercel is still building. The link works in a moment.", "success", { title: "Deployed to Vercel", action: { label: "Open", run: () => open(r.url, "_blank", "noopener") } });
+        systemNotify("Deployed to Vercel", r.url);
+      }
+      save();
+      setMood(document.querySelector(".msg.assistant:last-of-type .avatar"), "happy");
+    } catch (err) {
+      out.className = "test-out err";
+      out.textContent = err.message === "Failed to fetch" ? "Could not reach the service. Check your connection and try again." : err.message;
+    } finally {
+      btn.disabled = false;
+      ui.shipping = false;
+    }
+  };
+}
+$("#gh-push-btn").onclick = (e) => {
+  e.stopPropagation();
+  closePops();
+  openShip("github");
+};
+$("#vercel-btn").onclick = (e) => {
+  e.stopPropagation();
+  closePops();
+  openShip("vercel");
 };
 
 /* ---------- wiring ---------- */

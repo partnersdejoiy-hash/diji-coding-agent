@@ -1,5 +1,6 @@
 // Web-standard (Request -> Response) handlers, used as Vercel functions and by the Oracle server.
 import { streamChat, listModels, HttpError } from "./llm.js";
+import { deployWorkspace } from "./deploy.js";
 
 const MAX_BODY = 2_000_000;
 
@@ -19,9 +20,9 @@ export function corsHeaders(request) {
 export const json = (request, status, data) =>
   new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json", ...corsHeaders(request) } });
 
-async function readJson(request) {
+async function readJson(request, max = MAX_BODY) {
   const text = await request.text();
-  if (text.length > MAX_BODY) throw new HttpError(413, "That message is too large. Attach smaller files.");
+  if (text.length > max) throw new HttpError(413, "That message is too large. Attach smaller files.");
   try {
     return JSON.parse(text);
   } catch {
@@ -59,6 +60,16 @@ export async function chatHandler(request) {
   return new Response(stream, {
     headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-cache, no-transform", "x-accel-buffering": "no", ...corsHeaders(request) },
   });
+}
+
+export async function deployHandler(request) {
+  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request) });
+  if (request.method !== "POST") return json(request, 405, { error: "Use POST." });
+  try {
+    return json(request, 200, await deployWorkspace(await readJson(request, 6_000_000)));
+  } catch (e) {
+    return json(request, e.status || 500, { error: e.status ? e.message : "Deploy failed. Try again." });
+  }
 }
 
 export async function modelsHandler(request) {
