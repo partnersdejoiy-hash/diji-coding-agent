@@ -1,0 +1,9 @@
+{
+  "name": "Diji — the joyful coding agent",
+  "short_name": "Diji",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0E1F",
+  "theme_color": "#0B0E1F",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

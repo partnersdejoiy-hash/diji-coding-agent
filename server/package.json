@@ -1,0 +1,17 @@
+{
+  "name": "diji-server",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Diji cloud browser (Chromium) and chat proxy for an Oracle Cloud Always Free VM.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "setup": "npx playwright install --with-deps chromium",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "playwright": "1.56.0"
+  },
+  "engines": { "node": ">=20" }
+}

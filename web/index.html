@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>Diji — the joyful coding agent</title>
+  <meta name="description" content="Diji is an open coding agent by Dejoiy. Bring your own key or use free open models, with a live preview, skills and a cloud browser.">
+  <meta name="theme-color" content="#0B0E1F" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#FAF9FC" media="(prefers-color-scheme: light)">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/app.css">
+  <script>
+    // Apply the saved theme before first paint so there is no flash.
+    try {
+      const t = JSON.parse(localStorage.getItem("diji:v1") || "{}").settings?.theme;
+      if (t && t !== "system") document.documentElement.dataset.theme = t;
+    } catch {}
+  </script>
+  <script src="/config.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js" defer></script>
+  <script type="module" src="/js/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#composer-input">Skip to message box</a>
+  <div class="app" id="app">
+    <aside class="sidebar" id="sidebar" aria-label="Chats">
+      <div class="side-top">
+        <a class="brand" href="/" aria-label="Diji home"><span id="brand-mark"></span><span class="brand-word">diji</span></a>
+        <button class="icon-btn" id="side-close" aria-label="Close sidebar"></button>
+      </div>
+      <button class="new-chat" id="new-chat"><span id="new-chat-ic"></span>New chat<kbd>Ctrl K</kbd></button>
+      <label class="side-search"><span id="search-ic"></span><input id="chat-search" type="search" placeholder="Search chats" aria-label="Search chats"></label>
+      <nav class="chat-list" id="chat-list"></nav>
+      <div class="side-foot">
+        <button class="side-btn" id="open-skills"><span id="skills-ic"></span>Skills<span class="side-count" id="skills-count"></span></button>
+        <button class="side-btn" id="open-settings"><span id="settings-ic"></span>Settings</button>
+        <div class="side-row">
+          <button class="icon-btn" id="theme-btn" aria-label="Change theme"></button>
+          <button class="icon-btn bell" id="bell-btn" aria-label="Notifications" aria-haspopup="dialog"><span class="badge" id="bell-badge" hidden></span></button>
+          <a class="icon-btn" id="gh-link" href="https://github.com/partnersdejoiy-hash/diji-coding-agent" target="_blank" rel="noopener" aria-label="Source on GitHub"></a>
+        </div>
+      </div>
+    </aside>
+    <div class="scrim" id="scrim" hidden></div>
+
+    <main class="main" id="main">
+      <header class="topbar">
+        <button class="icon-btn" id="side-open" aria-label="Open sidebar"></button>
+        <h1 class="chat-title" id="chat-title">New chat</h1>
+        <div class="top-actions">
+          <button class="pill-btn" id="files-btn" aria-pressed="false"><span id="files-ic"></span><span class="lbl">Workspace</span><span class="pill-count" id="files-count" hidden></span></button>
+          <button class="pill-btn" id="browser-btn" aria-pressed="false"><span id="browser-ic"></span><span class="lbl">Browser</span></button>
+        </div>
+      </header>
+
+      <section class="thread" id="thread" aria-live="polite" aria-busy="false"></section>
+      <button class="jump" id="jump" hidden aria-label="Jump to latest"></button>
+
+      <form class="composer" id="composer">
+        <div class="composer-box">
+          <div class="attachments" id="attachments" hidden></div>
+          <textarea id="composer-input" rows="1" placeholder="Ask Diji to build, fix or explain anything…" aria-label="Message Diji"></textarea>
+          <div class="composer-row">
+            <button type="button" class="icon-btn" id="attach-btn" aria-label="Attach files"></button>
+            <input type="file" id="file-input" multiple hidden>
+            <button type="button" class="chip-btn" id="skills-btn" aria-haspopup="dialog"></button>
+            <div class="spacer"></div>
+            <button type="button" class="model-btn" id="model-btn" aria-haspopup="listbox"></button>
+            <button type="submit" class="send" id="send-btn" aria-label="Send"></button>
+          </div>
+        </div>
+        <p class="fineprint">Diji can make mistakes. Check important code before you ship it.</p>
+      </form>
+    </main>
+
+    <aside class="panel" id="panel" aria-label="Workspace" hidden>
+      <div class="panel-head">
+        <div class="tabs" role="tablist">
+          <button role="tab" class="tab" data-tab="preview" aria-selected="true">Preview</button>
+          <button role="tab" class="tab" data-tab="code" aria-selected="false">Code</button>
+          <button role="tab" class="tab" data-tab="browser" aria-selected="false">Browser</button>
+        </div>
+        <div class="panel-actions">
+          <button class="icon-btn" id="open-tab" aria-label="Open preview in a new tab"></button>
+          <button class="icon-btn" id="zip-btn" aria-label="Download all files as ZIP"></button>
+          <button class="icon-btn" id="panel-close" aria-label="Close panel"></button>
+        </div>
+      </div>
+      <div class="panel-body" id="panel-body"></div>
+    </aside>
+  </div>
+
+  <div class="popover" id="model-pop" role="listbox" aria-label="Choose a model" hidden></div>
+  <div class="popover notif-pop" id="notif-pop" role="dialog" aria-label="Notifications" hidden></div>
+  <dialog class="modal" id="settings-modal" aria-labelledby="settings-title"></dialog>
+  <dialog class="modal" id="skills-modal" aria-labelledby="skills-title"></dialog>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <div class="drop-hint" id="drop-hint" hidden><div><span id="drop-ic"></span><p>Drop files to give Diji context</p></div></div>
+</body>
+</html>

@@ -1,0 +1,34 @@
+services:
+  diji:
+    build:
+      context: ../..
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    environment:
+      - DIJI_SERVER_TOKEN=${DIJI_SERVER_TOKEN:-}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - DIJI_MAX_BROWSERS=${DIJI_MAX_BROWSERS:-4}
+      - DIJI_FREE_BASE_URL=${DIJI_FREE_BASE_URL:-}
+      - DIJI_FREE_API_KEY=${DIJI_FREE_API_KEY:-}
+      - DIJI_FREE_MODEL=${DIJI_FREE_MODEL:-}
+      - ALLOW_LOCAL_LLM=${ALLOW_LOCAL_LLM:-0}
+    shm_size: "1gb"
+    expose:
+      - "8787"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DIJI_DOMAIN=${DIJI_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      - diji
+
+volumes:
+  caddy_data:

@@ -1,0 +1,8 @@
+{
+  "name": "diji-web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Diji coding agent: static UI plus Vercel functions. No build step.",
+  "engines": { "node": ">=20" }
+}
