@@ -662,20 +662,14 @@ body.is-empty .fineprint { visibility: hidden; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(14px) scale(0.97); } }
 @keyframes toast-out { to { opacity: 0; transform: translateX(24px); } }
 
-/* highlight.js tokens: the two inks plus paper-safe neutrals */
+/* highlight.js tokens: two inks only (pink, blue) plus the text ink */
 .hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-doctag { color: var(--pink-ink); }
-.hljs-string, .hljs-attr-value, .hljs-template-tag, .hljs-addition, .hljs-regexp { color: #1b7a55; }
-.hljs-title, .hljs-section, .hljs-name, .hljs-selector-id, .hljs-selector-class, .hljs-function { color: var(--blue-ink); }
-.hljs-number, .hljs-literal, .hljs-symbol, .hljs-bullet, .hljs-type { color: #9a4a00; }
+.hljs-number, .hljs-literal, .hljs-symbol, .hljs-bullet, .hljs-type { color: var(--pink); }
+.hljs-string, .hljs-attr-value, .hljs-template-tag, .hljs-addition, .hljs-regexp { color: var(--blue-ink); }
+.hljs-title, .hljs-section, .hljs-name, .hljs-selector-id, .hljs-selector-class, .hljs-function { color: var(--ink); font-weight: 600; }
 .hljs-comment, .hljs-quote, .hljs-meta { color: var(--ink-3); font-style: italic; }
 .hljs-attr, .hljs-attribute, .hljs-variable, .hljs-property, .hljs-params { color: var(--ink-2); }
 .hljs-deletion { color: var(--err); }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .hljs-string, :root:not([data-theme="light"]) .hljs-addition { color: #6fdcaa; }
-  :root:not([data-theme="light"]) .hljs-number, :root:not([data-theme="light"]) .hljs-literal, :root:not([data-theme="light"]) .hljs-type { color: #ffb36b; }
-}
-:root[data-theme="dark"] .hljs-string, :root[data-theme="dark"] .hljs-addition { color: #6fdcaa; }
-:root[data-theme="dark"] .hljs-number, :root[data-theme="dark"] .hljs-literal, :root[data-theme="dark"] .hljs-type { color: #ffb36b; }
 
 /* ---------- responsive ---------- */
 /* Tablet and small laptop: sidebar and panel float over the chat. */
