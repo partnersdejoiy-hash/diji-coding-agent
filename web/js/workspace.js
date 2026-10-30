@@ -26,7 +26,7 @@ export function buildPreview(files) {
     const svg = pick(files, /\.svg$/i);
     if (svg) return `<!doctype html><body style="margin:0;display:grid;place-items:center;min-height:100vh;background:#fff">${files[svg]}</body>`;
     const md = pick(files, /\.md$/i);
-    if (md) return `<!doctype html><meta charset="utf-8"><body style="font:16px/1.65 system-ui;max-width:72ch;margin:40px auto;padding:0 20px;color:#15183a">${renderMarkdown(files[md])}</body>`;
+    if (md) return `<!doctype html><meta charset="utf-8"><body style="font:16px/1.65 system-ui;max-width:72ch;margin:40px auto;padding:0 20px;color:#221a1f">${renderMarkdown(files[md])}</body>`;
     return null;
   }
   const dir = htmlPath.includes("/") ? htmlPath.slice(0, htmlPath.lastIndexOf("/") + 1) : "";

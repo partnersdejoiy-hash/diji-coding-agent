@@ -1,0 +1,909 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-30T14:23:02+00:00",
+  "title": "Design System: Diji",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Newsprint",
+        "canonical": "#f5f1ea",
+        "tonalRamp": [
+          "#0d0b07",
+          "#27241e",
+          "#423f3a",
+          "#605d57",
+          "#838079",
+          "#a8a49e",
+          "#cecac3",
+          "#f2eee7"
+        ]
+      },
+      "rail-paper": {
+        "role": "neutral",
+        "displayName": "Pink Rail Paper",
+        "canonical": "#fbe7ef",
+        "tonalRamp": [
+          "#13070c",
+          "#2d1f25",
+          "#4a3b41",
+          "#69585f",
+          "#8c7b82",
+          "#b19fa6",
+          "#d8c4cc",
+          "#fce8f0"
+        ]
+      },
+      "rail-hover": {
+        "role": "neutral",
+        "displayName": "Rail Hover",
+        "canonical": "#f6d6e5",
+        "tonalRamp": [
+          "#17040e",
+          "#321c27",
+          "#503743",
+          "#6f5562",
+          "#937784",
+          "#b99ba9",
+          "#e0c0cf",
+          "#ffe4f3"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Clean Sheet",
+        "canonical": "#fffdf9",
+        "tonalRamp": [
+          "#0c0b09",
+          "#252421",
+          "#413f3c",
+          "#5f5d5a",
+          "#82807c",
+          "#a6a4a1",
+          "#cccac6",
+          "#f0eeea"
+        ]
+      },
+      "surface-2": {
+        "role": "neutral",
+        "displayName": "Recessed Sheet",
+        "canonical": "#efe9e0",
+        "tonalRamp": [
+          "#0e0a05",
+          "#28231d",
+          "#443f38",
+          "#625d55",
+          "#857f77",
+          "#a9a49b",
+          "#cfcac1",
+          "#f4eee5"
+        ]
+      },
+      "surface-3": {
+        "role": "neutral",
+        "displayName": "Pressed Sheet",
+        "canonical": "#e5ddd1",
+        "tonalRamp": [
+          "#0f0a04",
+          "#29231a",
+          "#453f35",
+          "#635d52",
+          "#867f74",
+          "#aba398",
+          "#d1c9be",
+          "#f5ede1"
+        ]
+      },
+      "code-paper": {
+        "role": "neutral",
+        "displayName": "Code Paper",
+        "canonical": "#f0eae0",
+        "tonalRamp": [
+          "#0e0b05",
+          "#28231c",
+          "#443f37",
+          "#625d54",
+          "#857f76",
+          "#a9a49a",
+          "#d0cac0",
+          "#f4eee4"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline Rule",
+        "canonical": "#e0d7ca",
+        "tonalRamp": [
+          "#100a03",
+          "#2a2319",
+          "#463f34",
+          "#645c51",
+          "#877f73",
+          "#aca397",
+          "#d2c9bc",
+          "#f6ede0"
+        ]
+      },
+      "rule-strong": {
+        "role": "neutral",
+        "displayName": "Firm Rule",
+        "canonical": "#cbbfae",
+        "tonalRamp": [
+          "#110901",
+          "#2b2215",
+          "#483e30",
+          "#665c4d",
+          "#8a7e6f",
+          "#aea392",
+          "#d5c9b7",
+          "#f9eddb"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Warm Ink",
+        "canonical": "#221a1f",
+        "tonalRamp": [
+          "#10090d",
+          "#292126",
+          "#463d42",
+          "#645a60",
+          "#877d83",
+          "#aca1a7",
+          "#d2c7ce",
+          "#f6ebf2"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Soft Ink",
+        "canonical": "#54484f",
+        "tonalRamp": [
+          "#11080d",
+          "#2b2027",
+          "#473c43",
+          "#665961",
+          "#897c83",
+          "#aea0a8",
+          "#d4c6ce",
+          "#f8eaf2"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Faint Ink",
+        "canonical": "#74676e",
+        "tonalRamp": [
+          "#11080d",
+          "#2b2026",
+          "#483c42",
+          "#665960",
+          "#897c83",
+          "#aea0a7",
+          "#d4c6ce",
+          "#f9eaf2"
+        ]
+      },
+      "pink": {
+        "role": "primary",
+        "displayName": "Dejoiy Press Pink",
+        "canonical": "#e8178a",
+        "tonalRamp": [
+          "#2b000d",
+          "#530027",
+          "#7d0043",
+          "#a90262",
+          "#dc2b86",
+          "#fe66aa",
+          "#ff97cf",
+          "#ffc3f3"
+        ]
+      },
+      "pink-ink": {
+        "role": "primary",
+        "displayName": "Deep Press Pink",
+        "canonical": "#b80f69",
+        "tonalRamp": [
+          "#2c000c",
+          "#530025",
+          "#7d0041",
+          "#aa005f",
+          "#d73882",
+          "#ff66a7",
+          "#ff97cc",
+          "#ffc3f0"
+        ]
+      },
+      "pink-tint": {
+        "role": "primary",
+        "displayName": "Blush Tint",
+        "canonical": "#f9d2e4",
+        "tonalRamp": [
+          "#19030e",
+          "#351928",
+          "#533544",
+          "#735262",
+          "#977585",
+          "#bd99aa",
+          "#e4bed0",
+          "#ffe2f4"
+        ]
+      },
+      "blue": {
+        "role": "secondary",
+        "displayName": "Dejoiy Press Blue",
+        "canonical": "#2f6bff",
+        "tonalRamp": [
+          "#010041",
+          "#00126c",
+          "#0a3199",
+          "#2050ca",
+          "#3873ff",
+          "#639dff",
+          "#90c7ff",
+          "#bbedff"
+        ]
+      },
+      "blue-ink": {
+        "role": "secondary",
+        "displayName": "Deep Press Blue",
+        "canonical": "#1d4bd1",
+        "tonalRamp": [
+          "#020041",
+          "#01116c",
+          "#0e3199",
+          "#2350ca",
+          "#3e74fc",
+          "#669dff",
+          "#92c6ff",
+          "#bcecff"
+        ]
+      },
+      "blue-tint": {
+        "role": "secondary",
+        "displayName": "Selection Blue",
+        "canonical": "#cddbff",
+        "tonalRamp": [
+          "#040921",
+          "#19223d",
+          "#343f5b",
+          "#515d7b",
+          "#737fa0",
+          "#97a4c6",
+          "#bccaed",
+          "#e0eeff"
+        ]
+      },
+      "blue-soft": {
+        "role": "secondary",
+        "displayName": "Pale Blue Wash",
+        "canonical": "#e2e9ff",
+        "tonalRamp": [
+          "#070a18",
+          "#1f2333",
+          "#3a3f50",
+          "#575d6f",
+          "#798093",
+          "#9da4b9",
+          "#c3cadf",
+          "#e7eeff"
+        ]
+      },
+      "plate": {
+        "role": "secondary",
+        "displayName": "Blue Plate",
+        "canonical": "rgb(47 107 255 / 0.5)",
+        "tonalRamp": [
+          "#010041",
+          "#00126c",
+          "#0a3199",
+          "#2050ca",
+          "#3873ff",
+          "#639dff",
+          "#90c7ff",
+          "#bbedff"
+        ]
+      },
+      "ok": {
+        "role": "status",
+        "displayName": "Success Green",
+        "canonical": "#157a52",
+        "tonalRamp": [
+          "#001600",
+          "#003210",
+          "#00502b",
+          "#007048",
+          "#38946a",
+          "#60ba8e",
+          "#87e1b3",
+          "#abffd6"
+        ]
+      },
+      "ok-soft": {
+        "role": "status",
+        "displayName": "Success Wash",
+        "canonical": "#dcf1e6",
+        "tonalRamp": [
+          "#020f08",
+          "#182820",
+          "#33443c",
+          "#506359",
+          "#72857c",
+          "#96aaa0",
+          "#bcd0c6",
+          "#dff4e9"
+        ]
+      },
+      "err": {
+        "role": "status",
+        "displayName": "Error Red",
+        "canonical": "#c01f4b",
+        "tonalRamp": [
+          "#2f0000",
+          "#57000e",
+          "#830025",
+          "#af003e",
+          "#da3d5f",
+          "#ff6682",
+          "#ff97ab",
+          "#ffc3d2"
+        ]
+      },
+      "err-soft": {
+        "role": "status",
+        "displayName": "Error Wash",
+        "canonical": "#fbe2e9",
+        "tonalRamp": [
+          "#15060b",
+          "#301e24",
+          "#4d3a3f",
+          "#6c575d",
+          "#907980",
+          "#b59da4",
+          "#dbc3ca",
+          "#ffe7ee"
+        ]
+      },
+      "mochi-body": {
+        "role": "primary",
+        "displayName": "Mochi Pink",
+        "canonical": "#f25aa8",
+        "tonalRamp": [
+          "#2a0011",
+          "#51002c",
+          "#7b0049",
+          "#a70669",
+          "#d23b8d",
+          "#fc67b2",
+          "#ff98d6",
+          "#ffc3f9"
+        ]
+      },
+      "mochi-cheek": {
+        "role": "primary",
+        "displayName": "Mochi Blush",
+        "canonical": "#c80e72",
+        "tonalRamp": [
+          "#2c000c",
+          "#530025",
+          "#7d0041",
+          "#aa005f",
+          "#dc2d82",
+          "#ff66a6",
+          "#ff97cc",
+          "#ffc3f0"
+        ]
+      },
+      "paper-dark": {
+        "role": "neutral",
+        "displayName": "Newsprint (dark)",
+        "canonical": "#19141a",
+        "tonalRamp": [
+          "#0e090f",
+          "#272228",
+          "#433d44",
+          "#615b63",
+          "#847e85",
+          "#a9a2aa",
+          "#cfc8d0",
+          "#f3ecf4"
+        ],
+        "theme": "dark",
+        "lightTwin": "paper"
+      },
+      "rail-paper-dark": {
+        "role": "neutral",
+        "displayName": "Pink Rail Paper (dark)",
+        "canonical": "#241921",
+        "tonalRamp": [
+          "#11080f",
+          "#2b2028",
+          "#483b44",
+          "#665962",
+          "#897b85",
+          "#ae9faa",
+          "#d5c5d0",
+          "#f9e9f4"
+        ],
+        "theme": "dark",
+        "lightTwin": "rail-paper"
+      },
+      "surface-dark": {
+        "role": "neutral",
+        "displayName": "Clean Sheet (dark)",
+        "canonical": "#211b21",
+        "tonalRamp": [
+          "#0e090e",
+          "#282228",
+          "#443d44",
+          "#625b62",
+          "#857d85",
+          "#aaa2a9",
+          "#d0c7d0",
+          "#f4ebf4"
+        ],
+        "theme": "dark",
+        "lightTwin": "surface"
+      },
+      "surface-2-dark": {
+        "role": "neutral",
+        "displayName": "Recessed Sheet (dark)",
+        "canonical": "#2a232a",
+        "tonalRamp": [
+          "#0f090f",
+          "#282128",
+          "#443d44",
+          "#635b63",
+          "#867d86",
+          "#aaa1aa",
+          "#d0c7d0",
+          "#f5ebf4"
+        ],
+        "theme": "dark",
+        "lightTwin": "surface-2"
+      },
+      "rule-dark": {
+        "role": "neutral",
+        "displayName": "Hairline Rule (dark)",
+        "canonical": "#342b32",
+        "tonalRamp": [
+          "#10080e",
+          "#2a2128",
+          "#463c44",
+          "#645a62",
+          "#877c85",
+          "#aca1a9",
+          "#d2c6cf",
+          "#f6eaf4"
+        ],
+        "theme": "dark",
+        "lightTwin": "rule"
+      },
+      "rule-strong-dark": {
+        "role": "neutral",
+        "displayName": "Firm Rule (dark)",
+        "canonical": "#4b4049",
+        "tonalRamp": [
+          "#10080f",
+          "#2a2029",
+          "#473c45",
+          "#655963",
+          "#887c86",
+          "#ada0aa",
+          "#d3c6d1",
+          "#f7eaf5"
+        ],
+        "theme": "dark",
+        "lightTwin": "rule-strong"
+      },
+      "ink-dark": {
+        "role": "neutral",
+        "displayName": "Warm Ink (dark)",
+        "canonical": "#f4edf0",
+        "tonalRamp": [
+          "#0e0a0c",
+          "#272225",
+          "#433e40",
+          "#625c5e",
+          "#847e81",
+          "#a9a2a5",
+          "#cfc8cb",
+          "#f3ecef"
+        ],
+        "theme": "dark",
+        "lightTwin": "ink"
+      },
+      "ink-3-dark": {
+        "role": "neutral",
+        "displayName": "Faint Ink (dark)",
+        "canonical": "#a19499",
+        "tonalRamp": [
+          "#11080c",
+          "#2b2125",
+          "#473c41",
+          "#665a5e",
+          "#897c81",
+          "#aea0a6",
+          "#d4c6cb",
+          "#f8eaef"
+        ],
+        "theme": "dark",
+        "lightTwin": "ink-3"
+      },
+      "pink-dark": {
+        "role": "primary",
+        "displayName": "Dejoiy Press Pink (dark)",
+        "canonical": "#ff4fa6",
+        "tonalRamp": [
+          "#2b000e",
+          "#520029",
+          "#7c0045",
+          "#a80365",
+          "#db2c88",
+          "#fd66ac",
+          "#ff97d2",
+          "#ffc3f5"
+        ],
+        "theme": "dark",
+        "lightTwin": "pink"
+      },
+      "pink-ink-dark": {
+        "role": "primary",
+        "displayName": "Deep Press Pink (dark)",
+        "canonical": "#ff86c3",
+        "tonalRamp": [
+          "#2a0012",
+          "#51002e",
+          "#77004b",
+          "#9b2a6a",
+          "#c3508e",
+          "#ed76b3",
+          "#ff9cd9",
+          "#ffc4fd"
+        ],
+        "theme": "dark",
+        "lightTwin": "pink-ink"
+      },
+      "pink-tint-dark": {
+        "role": "primary",
+        "displayName": "Blush Tint (dark)",
+        "canonical": "#6a2350",
+        "tonalRamp": [
+          "#260015",
+          "#460030",
+          "#67204d",
+          "#89406c",
+          "#b06290",
+          "#d887b5",
+          "#ffacdc",
+          "#ffd0ff"
+        ],
+        "theme": "dark",
+        "lightTwin": "pink-tint"
+      },
+      "blue-ink-dark": {
+        "role": "secondary",
+        "displayName": "Deep Press Blue (dark)",
+        "canonical": "#9cb7ff",
+        "tonalRamp": [
+          "#030037",
+          "#0f1c57",
+          "#283a78",
+          "#445a9a",
+          "#657dc1",
+          "#88a2e8",
+          "#adc8ff",
+          "#d0edff"
+        ],
+        "theme": "dark",
+        "lightTwin": "blue-ink"
+      },
+      "plate-dark": {
+        "role": "secondary",
+        "displayName": "Blue Plate (dark)",
+        "canonical": "rgb(111 150 255 / 0.55)",
+        "tonalRamp": [
+          "#030041",
+          "#080f6c",
+          "#1a3293",
+          "#3554b7",
+          "#5579df",
+          "#779fff",
+          "#9bc6ff",
+          "#c1ebff"
+        ],
+        "theme": "dark",
+        "lightTwin": "plate"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Empty-state greeting only, with the pink misregistered text-shadow."
+      },
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "Lowercase diji wordmark in the rail, Deep Press Pink."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Modal titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section headings inside settings; markdown headings use the display face at 650."
+      },
+      "reading": {
+        "displayName": "Reading",
+        "purpose": "Assistant replies in the 780px column."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Base UI and page default."
+      },
+      "ui": {
+        "displayName": "UI",
+        "purpose": "Buttons, tabs, chips, popover rows, toasts."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Sidebar date groups and popover group headings; sentence case."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Code, file names, URLs, keyboard hints."
+      }
+    },
+    "shadows": [
+      {
+        "name": "sheet",
+        "value": "0 1px 2px rgb(70 30 50 / 0.07)",
+        "dark": "0 1px 2px rgb(0 0 0 / 0.4)",
+        "purpose": "Resting buttons, file cards, new-chat button."
+      },
+      {
+        "name": "lift",
+        "value": "0 6px 18px -8px rgb(70 30 50 / 0.2), 0 1px 3px rgb(70 30 50 / 0.06)",
+        "dark": "0 8px 22px -10px rgb(0 0 0 / 0.65), 0 1px 3px rgb(0 0 0 / 0.3)",
+        "purpose": "Composer; hover state of cards and primary buttons."
+      },
+      {
+        "name": "float",
+        "value": "0 22px 50px -18px rgb(70 30 50 / 0.34), 0 4px 12px rgb(70 30 50 / 0.08)",
+        "dark": "0 26px 60px -20px rgb(0 0 0 / 0.8), 0 4px 14px rgb(0 0 0 / 0.35)",
+        "purpose": "Popovers, toasts, modals, overlay rail and panel."
+      },
+      {
+        "name": "plate-selected",
+        "value": "inset 0 0 0 1px var(--line-2), 3px 2.5px 0 var(--plate)",
+        "purpose": "Signature misregistered blue plate on selected chat, tab, model, file, settings nav, provider, theme segment. Offset only, never blended."
+      },
+      {
+        "name": "plate",
+        "value": "3px 2.5px 0 var(--plate)",
+        "purpose": "User bubbles, pressed pill toggles, enabled skill cards."
+      },
+      {
+        "name": "plate-dot",
+        "value": "1.5px 1px 0 var(--plate)",
+        "purpose": "Connected-provider status dot."
+      },
+      {
+        "name": "plate-pink-text",
+        "value": "text-shadow: 3px 2px 0 color-mix(in srgb, var(--pink) 45%, transparent)",
+        "purpose": "Greeting display line only."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Default ease-out for rises, pops, slides and mascot moves."
+      },
+      {
+        "name": "state",
+        "value": "0.15s",
+        "purpose": "Hover color/background and 1px rise."
+      },
+      {
+        "name": "rise",
+        "value": "rise 0.35s (messages), 0.6s (empty state)",
+        "purpose": "Content enters 8px from below."
+      },
+      {
+        "name": "pop",
+        "value": "pop 0.2s popovers, 0.28s modals",
+        "purpose": "6px rise + 0.98 scale."
+      },
+      {
+        "name": "sheet",
+        "value": "0.32s rail, 0.35s panel",
+        "purpose": "Rail and workspace slide; phones rise the panel as a sheet."
+      },
+      {
+        "name": "mascot",
+        "value": "squish 1s loop (thinking), hop 0.9s once (happy), wobble 0.6s once (oops), blink 5.4s, sway 4.6s",
+        "purpose": "Diji reports agent state."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "all durations 0.01ms",
+        "purpose": "prefers-reduced-motion: reduce."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "xs",
+        "value": "360px",
+        "note": "max-width; chip labels hidden"
+      },
+      {
+        "name": "phone",
+        "value": "767px",
+        "note": "max-width; full-screen panel and modals"
+      },
+      {
+        "name": "overlay",
+        "value": "1179px",
+        "note": "max-width; rail and panel float as sheets"
+      },
+      {
+        "name": "desktop-tight",
+        "value": "1180px-1440px",
+        "note": "panel narrows when rail is open"
+      },
+      {
+        "name": "wide",
+        "value": "1700px",
+        "note": "min-width; 860px reading column"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Warm-ink action button; rises on hover, presses into the paper on click.",
+      "html": "<button class=\"ds-btn-primary\">Open settings</button>",
+      "css": ":host{--paper:#f5f1ea;--surface:#fffdf9;--surface-2:#efe9e0;--surface-3:#e5ddd1;--line:#e0d7ca;--line-2:#cbbfae;--ink:#221a1f;--ink-2:#54484f;--ink-3:#74676e;--pink:#e8178a;--pink-ink:#b80f69;--pink-tint:#f9d2e4;--blue-ink:#1d4bd1;--accent-soft:#e2e9ff;--plate:rgb(47 107 255 / 0.5);--shadow-sm:0 1px 2px rgb(70 30 50 / 0.07);--shadow:0 6px 18px -8px rgb(70 30 50 / 0.2), 0 1px 3px rgb(70 30 50 / 0.06);--ease:cubic-bezier(0.16, 1, 0.3, 1);--font:\"Schibsted Grotesk\", ui-sans-serif, system-ui, sans-serif;--display:\"Bricolage Grotesque\", \"Schibsted Grotesk\", ui-sans-serif, sans-serif;--mono:\"JetBrains Mono\", ui-monospace, monospace;} .ds-btn-primary{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 16px;border:0;border-radius:11px;background:var(--ink);color:var(--surface);font:550 14px var(--font);box-shadow:var(--shadow-sm);cursor:pointer;transition:transform .15s var(--ease),box-shadow .15s}.ds-btn-primary:hover{transform:translateY(-1px);box-shadow:var(--shadow)}.ds-btn-primary:active{transform:translate(1px,1px)}.ds-btn-primary:focus-visible{outline:2px solid var(--blue-ink);outline-offset:2px;}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Recessed paper button for secondary actions.",
+      "html": "<button class=\"ds-btn-ghost\">Test connection</button>",
+      "css": ":host{--paper:#f5f1ea;--surface:#fffdf9;--surface-2:#efe9e0;--surface-3:#e5ddd1;--line:#e0d7ca;--line-2:#cbbfae;--ink:#221a1f;--ink-2:#54484f;--ink-3:#74676e;--pink:#e8178a;--pink-ink:#b80f69;--pink-tint:#f9d2e4;--blue-ink:#1d4bd1;--accent-soft:#e2e9ff;--plate:rgb(47 107 255 / 0.5);--shadow-sm:0 1px 2px rgb(70 30 50 / 0.07);--shadow:0 6px 18px -8px rgb(70 30 50 / 0.2), 0 1px 3px rgb(70 30 50 / 0.06);--ease:cubic-bezier(0.16, 1, 0.3, 1);--font:\"Schibsted Grotesk\", ui-sans-serif, system-ui, sans-serif;--display:\"Bricolage Grotesque\", \"Schibsted Grotesk\", ui-sans-serif, sans-serif;--mono:\"JetBrains Mono\", ui-monospace, monospace;} .ds-btn-ghost{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 16px;border-radius:11px;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);font:550 14px var(--font);cursor:pointer;transition:background .15s}.ds-btn-ghost:hover{background:var(--surface-3)}.ds-btn-ghost:focus-visible{outline:2px solid var(--blue-ink);outline-offset:2px;}"
+    },
+    {
+      "name": "Send Button",
+      "kind": "button",
+      "refersTo": "button-send",
+      "description": "The only solid-pink control; sends the message.",
+      "html": "<button class=\"ds-send\" aria-label=\"Send\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 19V5M5 12l7-7 7 7\"/></svg></button>",
+      "css": ":host{--paper:#f5f1ea;--surface:#fffdf9;--surface-2:#efe9e0;--surface-3:#e5ddd1;--line:#e0d7ca;--line-2:#cbbfae;--ink:#221a1f;--ink-2:#54484f;--ink-3:#74676e;--pink:#e8178a;--pink-ink:#b80f69;--pink-tint:#f9d2e4;--blue-ink:#1d4bd1;--accent-soft:#e2e9ff;--plate:rgb(47 107 255 / 0.5);--shadow-sm:0 1px 2px rgb(70 30 50 / 0.07);--shadow:0 6px 18px -8px rgb(70 30 50 / 0.2), 0 1px 3px rgb(70 30 50 / 0.06);--ease:cubic-bezier(0.16, 1, 0.3, 1);--font:\"Schibsted Grotesk\", ui-sans-serif, system-ui, sans-serif;--display:\"Bricolage Grotesque\", \"Schibsted Grotesk\", ui-sans-serif, sans-serif;--mono:\"JetBrains Mono\", ui-monospace, monospace;} .ds-send{display:grid;place-items:center;width:36px;height:36px;border:0;border-radius:12px;background:var(--pink);color:#fff;cursor:pointer;transition:transform .2s var(--ease),filter .2s}.ds-send:hover{transform:translateY(-1px) scale(1.04);filter:saturate(1.15)}.ds-send:active{transform:translate(1px,1px)}.ds-send:focus-visible{outline:2px solid var(--blue-ink);outline-offset:2px;}"
+    },
+    {
+      "name": "Composer",
+      "kind": "input",
+      "refersTo": "composer",
+      "description": "Clean-sheet message box with firm rule and lift shadow.",
+      "html": "<div class=\"ds-composer\"><textarea rows=\"1\" placeholder=\"Ask Diji to build, fix or explain anything…\"></textarea><div class=\"ds-row\"><span class=\"ds-chip\">1 skill + auto</span><span style=\"flex:1\"></span><button class=\"ds-send\" aria-label=\"Send\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 19V5M5 12l7-7 7 7\"/></svg></button></div></div>",
+      "css": ":host{--paper:#f5f1ea;--surface:#fffdf9;--surface-2:#efe9e0;--surface-3:#e5ddd1;--line:#e0d7ca;--line-2:#cbbfae;--ink:#221a1f;--ink-2:#54484f;--ink-3:#74676e;--pink:#e8178a;--pink-ink:#b80f69;--pink-tint:#f9d2e4;--blue-ink:#1d4bd1;--accent-soft:#e2e9ff;--plate:rgb(47 107 255 / 0.5);--shadow-sm:0 1px 2px rgb(70 30 50 / 0.07);--shadow:0 6px 18px -8px rgb(70 30 50 / 0.2), 0 1px 3px rgb(70 30 50 / 0.06);--ease:cubic-bezier(0.16, 1, 0.3, 1);--font:\"Schibsted Grotesk\", ui-sans-serif, system-ui, sans-serif;--display:\"Bricolage Grotesque\", \"Schibsted Grotesk\", ui-sans-serif, sans-serif;--mono:\"JetBrains Mono\", ui-monospace, monospace;} .ds-composer{max-width:560px;padding:12px 12px 10px 16px;background:var(--surface);border:1px solid var(--line-2);border-radius:16px;box-shadow:var(--shadow);transition:border-color .2s,box-shadow .2s;font-family:var(--font)}.ds-composer:focus-within{border-color:var(--ink-3);box-shadow:var(--shadow),0 0 0 1px var(--ink-3)}.ds-composer textarea{display:block;width:100%;border:0;outline:0;background:none;resize:none;font:16px/1.55 var(--font);color:var(--ink);caret-color:var(--pink);padding:4px 0 8px}.ds-composer textarea::placeholder{color:var(--ink-3)}.ds-row{display:flex;align-items:center;gap:6px}.ds-chip{display:inline-flex;align-items:center;height:32px;padding:0 10px;border-radius:10px;font-size:13px;color:var(--blue-ink);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--blue-ink) 40%,transparent)}.ds-send{display:grid;place-items:center;width:36px;height:36px;border:0;border-radius:12px;background:var(--pink);color:#fff}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Recessed settings field; lifts to a clean sheet with a blue-tinted rule on focus.",
+      "html": "<label class=\"ds-field\"><span>API key</span><input placeholder=\"sk-…\"></label>",
+      "css": ":host{--paper:#f5f1ea;--surface:#fffdf9;--surface-2:#efe9e0;--surface-3:#e5ddd1;--line:#e0d7ca;--line-2:#cbbfae;--ink:#221a1f;--ink-2:#54484f;--ink-3:#74676e;--pink:#e8178a;--pink-ink:#b80f69;--pink-tint:#f9d2e4;--blue-ink:#1d4bd1;--accent-soft:#e2e9ff;--plate:rgb(47 107 255 / 0.5);--shadow-sm:0 1px 2px rgb(70 30 50 / 0.07);--shadow:0 6px 18px -8px rgb(70 30 50 / 0.2), 0 1px 3px rgb(70 30 50 / 0.06);--ease:cubic-bezier(0.16, 1, 0.3, 1);--font:\"Schibsted Grotesk\", ui-sans-serif, system-ui, sans-serif;--display:\"Bricolage Grotesque\", \"Schibsted Grotesk\", ui-sans-serif, sans-serif;--mono:\"JetBrains Mono\", ui-monospace, monospace;} .ds-field{display:flex;flex-direction:column;gap:6px;font-family:var(--font)}.ds-field span{font-size:13px;font-weight:550;color:var(--ink-2)}.ds-field input{height:40px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:0 12px;outline:0;font:14px var(--font);color:var(--ink);caret-color:var(--pink)}.ds-field input:focus{border-color:color-mix(in srgb,var(--blue-ink) 55%,var(--line));background:var(--surface)}"
+    },
+    {
+      "name": "Rail Navigation",
+      "kind": "nav",
+      "refersTo": "sidebar-rail",
+      "description": "Pink-paper sidebar; the current chat is printed with the blue plate.",
+      "html": "<nav class=\"ds-rail\"><button class=\"ds-new\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg>New chat<kbd>Ctrl K</kbd></button><div class=\"ds-group\">Today</div><a class=\"ds-item ds-on\">Build a landing page</a><a class=\"ds-item\">Fix my Flask login</a><a class=\"ds-item\">Explain this regex</a></nav>",
+      "css": ":host{--paper:#f5f1ea;--surface:#fffdf9;--surface-2:#efe9e0;--surface-3:#e5ddd1;--line:#e0d7ca;--line-2:#cbbfae;--ink:#221a1f;--ink-2:#54484f;--ink-3:#74676e;--pink:#e8178a;--pink-ink:#b80f69;--pink-tint:#f9d2e4;--blue-ink:#1d4bd1;--accent-soft:#e2e9ff;--plate:rgb(47 107 255 / 0.5);--shadow-sm:0 1px 2px rgb(70 30 50 / 0.07);--shadow:0 6px 18px -8px rgb(70 30 50 / 0.2), 0 1px 3px rgb(70 30 50 / 0.06);--ease:cubic-bezier(0.16, 1, 0.3, 1);--font:\"Schibsted Grotesk\", ui-sans-serif, system-ui, sans-serif;--display:\"Bricolage Grotesque\", \"Schibsted Grotesk\", ui-sans-serif, sans-serif;--mono:\"JetBrains Mono\", ui-monospace, monospace;} .ds-rail{width:260px;padding:12px 10px;background:#fbe7ef;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px;font-family:var(--font)}.ds-new{display:flex;align-items:center;gap:10px;height:42px;padding:0 12px;border-radius:12px;font:550 14px var(--font);color:var(--ink);background:var(--surface);border:1px solid var(--line-2);box-shadow:var(--shadow-sm);cursor:pointer;transition:transform .15s var(--ease),box-shadow .15s;margin-bottom:6px}.ds-new:hover{transform:translateY(-1px);box-shadow:var(--shadow)}.ds-new kbd{margin-left:auto;font:11px var(--mono);color:var(--ink-3);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:1px 6px}.ds-group{font-size:11.5px;font-weight:600;color:var(--ink-3);margin:12px 10px 6px;letter-spacing:.01em}.ds-item{display:block;padding:8px 10px;border-radius:9px;font-size:14px;color:var(--ink-2);cursor:pointer;text-decoration:none}.ds-item:hover{background:#f6d6e5}.ds-item:focus-visible{outline:2px solid var(--blue-ink);outline-offset:2px;}.ds-on,.ds-on:hover{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:inset 0 0 0 1px var(--line-2),3px 2.5px 0 var(--plate)}"
+    },
+    {
+      "name": "Tabs",
+      "kind": "nav",
+      "refersTo": "selected-item",
+      "description": "Recessed track; the selected tab is a clean sheet with the misregistered plate.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab\" aria-selected=\"true\">Preview</button><button class=\"ds-tab\" aria-selected=\"false\">Code</button><button class=\"ds-tab\" aria-selected=\"false\">Browser</button></div>",
+      "css": ":host{--paper:#f5f1ea;--surface:#fffdf9;--surface-2:#efe9e0;--surface-3:#e5ddd1;--line:#e0d7ca;--line-2:#cbbfae;--ink:#221a1f;--ink-2:#54484f;--ink-3:#74676e;--pink:#e8178a;--pink-ink:#b80f69;--pink-tint:#f9d2e4;--blue-ink:#1d4bd1;--accent-soft:#e2e9ff;--plate:rgb(47 107 255 / 0.5);--shadow-sm:0 1px 2px rgb(70 30 50 / 0.07);--shadow:0 6px 18px -8px rgb(70 30 50 / 0.2), 0 1px 3px rgb(70 30 50 / 0.06);--ease:cubic-bezier(0.16, 1, 0.3, 1);--font:\"Schibsted Grotesk\", ui-sans-serif, system-ui, sans-serif;--display:\"Bricolage Grotesque\", \"Schibsted Grotesk\", ui-sans-serif, sans-serif;--mono:\"JetBrains Mono\", ui-monospace, monospace;} .ds-tabs{display:inline-flex;gap:2px;padding:3px;background:var(--surface-2);border-radius:11px;font-family:var(--font)}.ds-tab{height:30px;padding:0 13px;border:0;border-radius:8px;background:none;font:500 13.5px var(--font);color:var(--ink-2);cursor:pointer}.ds-tab:hover{color:var(--ink)}.ds-tab:focus-visible{outline:2px solid var(--blue-ink);outline-offset:2px;}.ds-tab[aria-selected=\"true\"]{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line-2),3px 2.5px 0 var(--plate)}"
+    },
+    {
+      "name": "User Bubble",
+      "kind": "custom",
+      "refersTo": "user-bubble",
+      "description": "Blush-tint message with a tail corner and the blue plate: this is you.",
+      "html": "<div class=\"ds-bubble\">Build a landing page for a college tech fest</div>",
+      "css": ":host{--paper:#f5f1ea;--surface:#fffdf9;--surface-2:#efe9e0;--surface-3:#e5ddd1;--line:#e0d7ca;--line-2:#cbbfae;--ink:#221a1f;--ink-2:#54484f;--ink-3:#74676e;--pink:#e8178a;--pink-ink:#b80f69;--pink-tint:#f9d2e4;--blue-ink:#1d4bd1;--accent-soft:#e2e9ff;--plate:rgb(47 107 255 / 0.5);--shadow-sm:0 1px 2px rgb(70 30 50 / 0.07);--shadow:0 6px 18px -8px rgb(70 30 50 / 0.2), 0 1px 3px rgb(70 30 50 / 0.06);--ease:cubic-bezier(0.16, 1, 0.3, 1);--font:\"Schibsted Grotesk\", ui-sans-serif, system-ui, sans-serif;--display:\"Bricolage Grotesque\", \"Schibsted Grotesk\", ui-sans-serif, sans-serif;--mono:\"JetBrains Mono\", ui-monospace, monospace;} .ds-bubble{display:inline-block;max-width:420px;background:var(--pink-tint);color:var(--ink);padding:11px 16px;border-radius:20px 20px 6px 20px;font:15.5px/1.6 var(--font);box-shadow:3px 2.5px 0 var(--plate)}"
+    },
+    {
+      "name": "File Card",
+      "kind": "card",
+      "refersTo": "file-card",
+      "description": "A written file in the chat; opens it in the workspace.",
+      "html": "<button class=\"ds-file\"><span class=\"ds-file-ic\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\"/><path d=\"M14 2v6h6\"/></svg></span><span class=\"ds-meta\"><strong>index.html</strong><span>17 lines</span></span><span class=\"ds-go\">›</span></button>",
+      "css": ":host{--paper:#f5f1ea;--surface:#fffdf9;--surface-2:#efe9e0;--surface-3:#e5ddd1;--line:#e0d7ca;--line-2:#cbbfae;--ink:#221a1f;--ink-2:#54484f;--ink-3:#74676e;--pink:#e8178a;--pink-ink:#b80f69;--pink-tint:#f9d2e4;--blue-ink:#1d4bd1;--accent-soft:#e2e9ff;--plate:rgb(47 107 255 / 0.5);--shadow-sm:0 1px 2px rgb(70 30 50 / 0.07);--shadow:0 6px 18px -8px rgb(70 30 50 / 0.2), 0 1px 3px rgb(70 30 50 / 0.06);--ease:cubic-bezier(0.16, 1, 0.3, 1);--font:\"Schibsted Grotesk\", ui-sans-serif, system-ui, sans-serif;--display:\"Bricolage Grotesque\", \"Schibsted Grotesk\", ui-sans-serif, sans-serif;--mono:\"JetBrains Mono\", ui-monospace, monospace;} .ds-file{display:flex;align-items:center;gap:12px;width:100%;max-width:420px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--surface);text-align:left;box-shadow:var(--shadow-sm);cursor:pointer;font-family:var(--font);transition:border-color .15s,box-shadow .2s,transform .2s var(--ease)}.ds-file:hover{border-color:var(--line-2);box-shadow:var(--shadow);transform:translateY(-1px)}.ds-file:focus-visible{outline:2px solid var(--blue-ink);outline-offset:2px;}.ds-file-ic{display:grid;place-items:center;width:36px;height:36px;border-radius:8px;background:var(--pink-tint);color:var(--pink-ink);flex:none}.ds-meta{display:flex;flex-direction:column;flex:1;min-width:0;line-height:1.35}.ds-meta strong{font:500 13.5px var(--mono);color:var(--ink)}.ds-meta span{font-size:12.5px;color:var(--ink-3)}.ds-go{color:var(--ink-3);font-size:18px}"
+    },
+    {
+      "name": "Greeting",
+      "kind": "custom",
+      "refersTo": "display",
+      "description": "Empty-state display line printed with a pink misregistered shadow.",
+      "html": "<h1 class=\"ds-greet\">What are we building today?</h1>",
+      "css": ":host{--paper:#f5f1ea;--surface:#fffdf9;--surface-2:#efe9e0;--surface-3:#e5ddd1;--line:#e0d7ca;--line-2:#cbbfae;--ink:#221a1f;--ink-2:#54484f;--ink-3:#74676e;--pink:#e8178a;--pink-ink:#b80f69;--pink-tint:#f9d2e4;--blue-ink:#1d4bd1;--accent-soft:#e2e9ff;--plate:rgb(47 107 255 / 0.5);--shadow-sm:0 1px 2px rgb(70 30 50 / 0.07);--shadow:0 6px 18px -8px rgb(70 30 50 / 0.2), 0 1px 3px rgb(70 30 50 / 0.06);--ease:cubic-bezier(0.16, 1, 0.3, 1);--font:\"Schibsted Grotesk\", ui-sans-serif, system-ui, sans-serif;--display:\"Bricolage Grotesque\", \"Schibsted Grotesk\", ui-sans-serif, sans-serif;--mono:\"JetBrains Mono\", ui-monospace, monospace;} .ds-greet{margin:0;font:700 clamp(30px,4vw,44px)/1.08 var(--display);letter-spacing:-0.035em;color:var(--ink);text-wrap:balance;text-shadow:3px 2px 0 color-mix(in srgb,var(--pink) 45%,transparent)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Printed, Not Rendered",
+    "overview": "Diji is a familiar chat-plus-workspace app pulled through a two-ink risograph press. The ground is newsprint paper (warm off-white by day, plum-black paper by night) with a faint fractal grain; the left rail is pink-tinted paper; reading surfaces are clean sheets laid on top, separated by 1px ink rules rather than glass, glow or gradients. Only two inks touch the page: Dejoiy magenta for actions, brand and the mascot, and Dejoiy blue for links, selection, focus and code. Text is a warm near-black ink.\n\nThe one printing accident the system allows on purpose is misregistration. Anything selected or active is printed twice: the paper card, and a blue plate a few pixels off-register behind it (a hard, unblurred offset shadow). The greeting gets the same treatment in pink. The plates sit side by side and never blend; pink laid over blue would print purple, and that look was explicitly rejected. Diji the mascot is printed the same way: a pink mochi body with a blue plate peeking out at the lower right.\n\nDensity is calm and conversational: a 780px reading column, generous turn spacing, small radii, and a single heavy display face reserved for the greeting, headings and the wordmark. Light and dark are equal citizens; every ink and paper has a tuned dark twin rather than an inverted one. The system refuses the category default for AI tools: navy surfaces, glass, glow and blue-violet gradients.",
+    "keyCharacteristics": [
+      "Newsprint paper ground with grain; sheets of paper for reading surfaces; 1px rules for structure.",
+      "Exactly two brand inks (pink, blue) plus warm ink neutrals; status green and red are functional only.",
+      "Misregistered blue plate (`3px 2.5px 0`) marks every selected or active thing.",
+      "Bricolage Grotesque for display, Schibsted Grotesk for UI and reading, JetBrains Mono for code.",
+      "Small radii (6 to 16px), soft ambient shadows for lift, hard offset plates for state.",
+      "Diji the pink mochi carries the personality: it squishes while working, hops when done, wobbles on error."
+    ],
+    "rules": [
+      {
+        "name": "The Two Inks Rule",
+        "body": "Pink and blue are the only chromatic inks in the chrome. Pink means \"act / this is Diji\"; blue means \"go / selected / focused / code\". Green and red appear only to report status.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Overprint Rule",
+        "body": "Pink and blue never overlap with a blend mode. The blue plate is an offset box-shadow beside the paper card, not a multiply layer under pink, because pink multiplied over blue prints purple.",
+        "section": "colors"
+      },
+      {
+        "name": "The Paper First Rule",
+        "body": "Grain lives on the ground only (`body::before`, multiply at 0.9 in light, screen at 0.4 in dark). Reading surfaces are clean sheets; never put grain, gradients or tints behind long text.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Loud Face Rule",
+        "body": "Bricolage appears only in the greeting, the wordmark, modal and section titles, and markdown headings. Every control, label and paragraph is Schibsted Grotesk.",
+        "section": "typography"
+      },
+      {
+        "name": "The Mono Means Machine Rule",
+        "body": "JetBrains Mono marks things a machine reads: code, file names, paths, URLs, keyboard hints. Never use it for decoration.",
+        "section": "typography"
+      },
+      {
+        "name": "The Plate Means Selected Rule",
+        "body": "A hard offset shadow is reserved for state: selected, pressed, enabled, or \"this is you\" (user bubbles). It is never used for hover, for decoration, or for lift.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Soft For Float Rule",
+        "body": "Anything that floats above the page uses the blurred ambient ladder (Sheet, Lift, Float), never the plate.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** mark every selected or active element with the misregistered blue plate (`3px 2.5px 0` of `plate`) on a Clean Sheet card with a `rule-strong` inset.",
+      "**Do** keep pink for actions and Diji, and blue for links, focus, selection and code.",
+      "**Do** separate regions with 1px rules (`rule`, `rule-strong`) and tonal paper steps, not with heavy shadows.",
+      "**Do** give every color a tuned dark-mode twin and check both themes; dark mode is plum-black paper, not navy.",
+      "**Do** let Diji react to state (thinking, happy, oops) instead of adding spinners or banners where the mascot is present.",
+      "**Do** honour `prefers-reduced-motion`; the build collapses all animation and transition durations to near zero."
+    ],
+    "donts": [
+      "**Don't** let pink and blue overlap through a blend mode or translucent layers; overlap prints purple, which was rejected. (Blending a single ink or the grain against paper, as the mascot's back plate and the ground grain do, is fine.)",
+      "**Don't** use navy-dominant surfaces, glass, glow, or blue-violet gradients as decoration.",
+      "**Don't** use the hard offset plate for hover, decoration or elevation; it means \"selected\".",
+      "**Don't** put paper grain or tints behind long-form reading text.",
+      "**Don't** use Bricolage Grotesque for controls or body copy, or uppercase small labels.",
+      "**Don't** add a third brand hue; Dejoiy violet survives only as a legacy variable name aliased to pink."
+    ]
+  }
+}

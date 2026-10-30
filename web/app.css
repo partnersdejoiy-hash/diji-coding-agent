@@ -4,7 +4,6 @@
   --bg: var(--paper);
   --bg-2: #fbe7ef;
   --rail-hover: #f6d6e5;
-  --rail-on: #f2c7db;
   --surface: #fffdf9;
   --surface-2: #efe9e0;
   --surface-3: #e5ddd1;
@@ -14,6 +13,7 @@
   --ink-2: #54484f;
   --ink-3: #74676e;
   --pink: #e8178a;
+  --on-pink: #ffffff;
   --pink-ink: #b80f69;
   --pink-tint: #f9d2e4;
   --blue: #2f6bff;
@@ -42,7 +42,6 @@
   --magenta: var(--pink);
   --violet: var(--pink);
   --brand: var(--pink);
-  --sun: #ffc93d;
 
   --font: "Schibsted Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --display: "Bricolage Grotesque", "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
@@ -62,7 +61,6 @@
     --bg: var(--paper);
     --bg-2: #241921;
     --rail-hover: #2f212b;
-    --rail-on: #3a2533;
     --surface: #211b21;
     --surface-2: #2a232a;
     --surface-3: #342b33;
@@ -72,6 +70,8 @@
     --ink-2: #cbbfc5;
     --ink-3: #a19499;
     --pink: #ff4fa6;
+  --on-pink: #241a20;
+    --on-pink: #241a20;
     --pink-ink: #ff86c3;
     --pink-tint: #6a2350;
     --blue: #6f96ff;
@@ -105,7 +105,6 @@
   --bg: var(--paper);
   --bg-2: #241921;
   --rail-hover: #2f212b;
-  --rail-on: #3a2533;
   --surface: #211b21;
   --surface-2: #2a232a;
   --surface-3: #342b33;
@@ -115,6 +114,7 @@
   --ink-2: #cbbfc5;
   --ink-3: #a19499;
   --pink: #ff4fa6;
+  --on-pink: #241a20;
   --pink-ink: #ff86c3;
   --pink-tint: #6a2350;
   --blue: #6f96ff;
@@ -311,7 +311,7 @@ body.side-open #side-open { visibility: hidden; width: 0; margin: 0; }
 .bell { position: relative; }
 .badge {
   position: absolute; top: 4px; right: 3px; min-width: 16px; height: 16px; padding: 0 4px;
-  border-radius: 8px; background: var(--magenta); color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
+  border-radius: 8px; background: var(--magenta); color: var(--on-pink); font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
 }
 .scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 25; animation: fade 0.2s; }
 
@@ -330,7 +330,7 @@ body.is-empty .chat-title { visibility: hidden; }
 }
 .pill-btn:hover { color: var(--ink); border-color: var(--line-2); }
 .pill-btn[aria-pressed="true"] { background: var(--surface); color: var(--ink); border-color: var(--line-2); box-shadow: 3px 2.5px 0 var(--plate); }
-.pill-count { font-size: 11.5px; background: var(--pink); color: #fff; border-radius: 7px; padding: 0 6px; line-height: 18px; font-weight: 650; }
+.pill-count { font-size: 11.5px; background: var(--pink); color: var(--on-pink); border-radius: 7px; padding: 0 6px; line-height: 18px; font-weight: 650; }
 
 /* thread */
 .thread { flex: 1; overflow-y: auto; overscroll-behavior: contain; scroll-padding-bottom: 24px; }
@@ -466,7 +466,7 @@ body.is-empty .topbar { position: absolute; inset: 0 0 auto 0; }
 .model-prov { color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .send {
   display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; flex: none;
-  background: var(--brand); color: #fff; box-shadow: none;
+  background: var(--brand); color: var(--on-pink); box-shadow: none;
   transition: transform 0.2s var(--ease), opacity 0.2s, filter 0.2s;
 }
 .send:not(:disabled):hover { transform: translateY(-1px) scale(1.04); filter: saturate(1.15); }
@@ -562,7 +562,7 @@ body.is-empty .fineprint { visibility: hidden; }
 .toast-ic { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 8px; flex: none; background: var(--surface-2); color: var(--ink-2); }
 .toast-success .toast-ic { background: var(--ok-soft); color: var(--ok); }
 .toast-error .toast-ic { background: var(--err-soft); color: var(--err); }
-.toast-agent .toast-ic { background: var(--brand); color: #fff; }
+.toast-agent .toast-ic { background: var(--brand); color: var(--on-pink); }
 .toast-body { flex: 1; min-width: 0; display: flex; flex-direction: column; padding-top: 2px; }
 .toast-body strong { font-weight: 600; }
 .toast-body span { color: var(--ink-2); overflow-wrap: anywhere; }
