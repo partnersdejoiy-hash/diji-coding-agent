@@ -8,6 +8,7 @@ import { commitChanges } from "./versions.js";
 import { browserCall, serverConfigured } from "./browser.js";
 import { activeSkills, skillContent } from "./skills.js";
 import { agentSection, mcpSection, callMcp } from "./agents.js";
+import { OFFICE_PROMPT } from "./office.js";
 
 const MAX_STEPS = 6;
 const MAX_TOOLS_PER_STEP = 3;
@@ -111,7 +112,7 @@ function rulesSection(chat) {
 
 async function systemPrompt(chat, prompt) {
   const skills = activeSkills(prompt);
-  let text = BASE_PROMPT + (MODE_PROMPTS[state.settings.mode] || "") + (EFFORT[state.settings.effort] || "") + (STYLES[state.settings.style] || "") + agentSection(chat) + memorySection() + projectSection(chat) + rulesSection(chat) + mcpSection();
+  let text = BASE_PROMPT + OFFICE_PROMPT + (MODE_PROMPTS[state.settings.mode] || "") + (EFFORT[state.settings.effort] || "") + (STYLES[state.settings.style] || "") + agentSection(chat) + memorySection() + projectSection(chat) + rulesSection(chat) + mcpSection();
   if (chat.locked?.length) text += `\n\nLocked files (the user froze these; never rewrite or delete them): ${chat.locked.join(", ")}`;
   if (!serverConfigured()) text += "\n\nNote: the cloud browser is offline right now, so do not use diji-search or diji-browse. Answer from what you know and say when something may be out of date.";
   if (skills.length) {

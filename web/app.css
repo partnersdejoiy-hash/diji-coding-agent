@@ -1060,3 +1060,7 @@ body.on-page .chat-title { visibility: visible; }
 .chan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 14px 0; }
 .chan { display: flex; flex-direction: column; gap: 4px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
 .chan .muted { font-size: 12.5px; line-height: 1.45; }
+.office-dl { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; margin: -2px 0 12px; border-radius: 10px; background: var(--ink); color: var(--surface); font-size: 13px; font-weight: 600; box-shadow: 3px 3px 0 var(--plate); }
+.office-dl:hover { transform: translate(-1px, -1px); }
+.office-dl:disabled { opacity: 0.7; }
+.office-frame { width: 100%; height: 100%; border: 0; background: #efe9e0; display: block; }

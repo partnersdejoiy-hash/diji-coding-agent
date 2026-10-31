@@ -8,7 +8,8 @@ import { icon } from "./icons.js";
 import { diji, setMood } from "./mascot.js";
 import { esc, renderMarkdown, segments } from "./markdown.js";
 import { runAgent, enhancePrompt } from "./agent.js";
-import { renderPreview, renderCode, renderHistory, buildPreview, previewFrame, zip, downloadBlob, openInStackBlitz, importFromGitHub } from "./workspace.js";
+import { isOffice } from "./office.js";
+import { downloadOffice, renderPreview, renderCode, renderHistory, buildPreview, previewFrame, zip, downloadBlob, openInStackBlitz, importFromGitHub } from "./workspace.js";
 import { commitChanges, restoreVersion } from "./versions.js";
 import { renderBrowser, cloud, browserCall, serverConfigured, checkCloud } from "./browser.js";
 import { loadSkills, activeSkills } from "./skills.js";
@@ -359,7 +360,7 @@ function fillAssistant(node, m) {
     let html = "";
     for (const s of segments(m.content)) {
       if (s.type === "text") html += `<div class="md">${renderMarkdown(s.text)}</div>`;
-      else if (s.type === "file") html += fileCard(s, chat, m);
+      else if (s.type === "file") html += fileCard(s, chat, m) + (isOffice(s.path) && s.done && !m.streaming ? `<button type="button" class="office-dl" data-office-dl="${esc(s.path)}">${icon({ docx: "doc", pptx: "slides", xlsx: "sheet" }[s.path.split(".").pop().toLowerCase()], 15)} Download ${esc(s.path.split("/").pop())}</button>` : "");
       else if (s.type === "error") html += `<div class="callout err">${icon("alert", 16)}<span>${esc(s.text)}</span></div>`;
       else if (s.type === "tool" && s.tool === "delete") html += `<div class="chip-note">${icon("trash", 13)} Deleted ${esc(s.args.path || "")}</div>`;
       else if (s.type === "tool" && s.tool === "remember") html += `<div class="chip-note">${icon("brain", 13)} Remembered: ${esc(s.args.text || "")}</div>`;
@@ -461,6 +462,12 @@ $("#thread").addEventListener("click", async (e) => {
   const chat = activeChat();
   const msgNode = e.target.closest(".msg");
   const msg = chat?.messages.find((m) => m.id === msgNode?.dataset.id);
+  const officeBtn = e.target.closest("[data-office-dl]");
+  if (officeBtn && chat) {
+    const p = officeBtn.dataset.officeDl;
+    const seg = msg ? segments(msg.content).find((s) => s.type === "file" && s.path === p) : null;
+    return downloadOffice(p, chat.files[p] ?? seg?.code ?? "", officeBtn);
+  }
   const copyCode = e.target.closest("[data-copy]");
   if (copyCode) {
     await navigator.clipboard.writeText(copyCode.closest(".codeblock").querySelector("code").innerText).catch(() => {});
@@ -471,6 +478,7 @@ $("#thread").addEventListener("click", async (e) => {
   const file = e.target.closest("[data-file]");
   if (file) {
     ui.codeFile = file.dataset.file;
+    if (ui.codeView.mode !== "changes") ui.codeView.mode = undefined;
     openPanel("code");
     return;
   }
@@ -1027,7 +1035,7 @@ const previewHandlers = {
 const codeHandlers = {
   onSelect: (p) => {
     ui.codeFile = p;
-    if (ui.codeView.mode === "edit") ui.codeView.mode = "code";
+    if (ui.codeView.mode !== "changes") ui.codeView.mode = undefined; // each file opens in its natural view
     renderPanel();
   },
   onMode: (m) => {
@@ -1051,7 +1059,7 @@ const codeHandlers = {
   onSave: (path, code) => {
     const chat = activeChat();
     commitChanges(chat, { [path]: code }, `Manual edit of ${path}`);
-    ui.codeView.mode = "code";
+    ui.codeView.mode = undefined;
     afterFilesChanged(chat);
     toast(`Saved ${path}. A checkpoint was created.`, "success", { keep: false });
   },
@@ -1634,3 +1642,5 @@ async function boot() {
   window.__diji = { state, browserCall, serverConfigured };
 }
 boot();
+
+document.addEventListener("diji:error", (e) => toast(e.detail, "error", { keep: false }));

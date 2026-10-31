@@ -2,6 +2,7 @@
 import { esc, langOf, renderMarkdown } from "./markdown.js";
 import { icon } from "./icons.js";
 import { lineDiff, previousContent } from "./versions.js";
+import { isOffice, officePreview, buildOffice } from "./office.js";
 
 // What a reply wants to change: { path: content | null for delete }. Applying is versions.commitChanges.
 export function fileChanges(segs) {
@@ -34,6 +35,8 @@ export function buildPreview(files) {
   if (!htmlPath) {
     const svg = pick(files, /\.svg$/i);
     if (svg) return `<!doctype html><body style="margin:0;display:grid;place-items:center;min-height:100vh;background:#fff">${files[svg]}</body>`;
+    const office = pick(files, /\.(docx|pptx|xlsx)$/i);
+    if (office) return officePreview(office, files[office]);
     const md = pick(files, /\.md$/i);
     if (md) return `<!doctype html><meta charset="utf-8"><body style="font:16px/1.65 system-ui;max-width:72ch;margin:40px auto;padding:0 20px;color:#221a1f">${renderMarkdown(files[md])}</body>`;
     return null;
@@ -209,7 +212,8 @@ export function renderCode(el, chat, view, h) {
   const current = all.includes(view.selected) ? view.selected : paths[0] || all[0];
   const code = chat.files[current];
   const locked = (chat.locked || []).includes(current);
-  const mode = view.mode || "code";
+  const office = isOffice(current);
+  const mode = view.mode === "document" && !office ? "code" : view.mode || (office ? "document" : "code");
   const scroll = el.querySelector(".code-body")?.scrollTop || 0;
   el.innerHTML = `<div class="code-view">
     <div class="file-side">
@@ -230,20 +234,27 @@ export function renderCode(el, chat, view, h) {
       <div class="code-pane-head">
         <span class="mono path">${esc(current)}</span>
         <div class="seg sm" role="tablist" aria-label="File view">
-          ${["code", "changes", "edit"].map((m) => `<label><input type="radio" name="cv" value="${m}"${m === mode ? " checked" : ""}><span>${{ code: "Code", changes: "Changes", edit: "Edit" }[m]}</span></label>`).join("")}
+          ${[...(office ? ["document"] : []), "code", "changes", "edit"].map((m) => `<label><input type="radio" name="cv" value="${m}"${m === mode ? " checked" : ""}><span>${{ document: "Preview", code: office ? "Source" : "Code", changes: "Changes", edit: "Edit" }[m]}</span></label>`).join("")}
         </div>
         <span class="spacer"></span>
         <button type="button" class="icon-btn tiny" data-lock aria-pressed="${locked}" title="${locked ? "Unlock: let Diji change this file" : "Lock: Diji will not change this file"}" aria-label="${locked ? "Unlock file" : "Lock file"}">${icon(locked ? "lock" : "unlock", 15)}</button>
+        ${office ? `<button type="button" class="icon-btn tiny office-get" data-office-dl="${esc(current)}" title="Download ${esc(current.split("/").pop())}" aria-label="Download ${esc(current.split("/").pop())}">${icon("download", 15)}</button>` : ""}
         <button type="button" class="icon-btn tiny" data-copy-file title="Copy file" aria-label="Copy file">${icon("copy", 15)}</button>
       </div>
       ${mode === "edit"
         ? `<textarea class="code-edit" spellcheck="false" aria-label="Edit ${esc(current)}">${esc(code)}</textarea>
            <div class="edit-bar"><span class="muted sm">Saving creates a checkpoint you can undo.</span><span class="spacer"></span>
            <button type="button" class="btn-ghost sm" data-cancel-edit>Cancel</button><button type="button" class="btn-primary sm" data-save-edit>${icon("check", 14)} Save</button></div>`
+        : mode === "document"
+          ? `<iframe class="code-body office-frame" sandbox="" title="Preview of ${esc(current)}"></iframe>`
         : mode === "changes"
           ? `<div class="code-body">${diffHtml(previousContent(chat, current), code)}</div>`
           : `<pre class="code-body"><code class="hljs">${highlight(code, langOf(current))}</code></pre>`}
     </div></div>`;
+  const frame = el.querySelector(".office-frame");
+  if (frame) frame.srcdoc = officePreview(current, code);
+  const dl = el.querySelector("[data-office-dl]");
+  if (dl) dl.onclick = () => downloadOffice(current, code, dl);
   const body = el.querySelector(".code-body");
   if (body) body.scrollTop = scroll;
   const search = el.querySelector(".file-search input");
@@ -276,7 +287,7 @@ export function renderCode(el, chat, view, h) {
       }
     };
     el.querySelector("[data-save-edit]").onclick = () => h.onSave(current, ta.value);
-    el.querySelector("[data-cancel-edit]").onclick = () => h.onMode("code");
+    el.querySelector("[data-cancel-edit]").onclick = () => h.onMode(undefined);
   }
 }
 
@@ -356,4 +367,26 @@ export async function importFromGitHub(input, token) {
     total += t.size;
   }
   return { files, name: `${owner}/${repo}`, skipped: wanted.length - Object.keys(files).length };
+}
+
+// Builds the real .docx/.pptx/.xlsx and downloads it.
+export async function downloadOffice(path, text, btn) {
+  const old = btn?.innerHTML;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Building…";
+  }
+  try {
+    downloadBlob(await buildOffice(path, text), path.split("/").pop());
+  } catch (e) {
+    alertError(e);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = old;
+    }
+  }
+}
+function alertError(e) {
+  document.dispatchEvent(new CustomEvent("diji:error", { detail: e.message || String(e) }));
 }
