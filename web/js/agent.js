@@ -6,7 +6,7 @@ import { segments, toolCalls } from "./markdown.js";
 import { fileChanges } from "./workspace.js";
 import { commitChanges } from "./versions.js";
 import { browserCall, serverConfigured } from "./browser.js";
-import { activeSkills, skillContent } from "./skills.js";
+import { activeSkills, skillContent, skillsReady } from "./skills.js";
 import { agentSection, mcpSection, callMcp } from "./agents.js";
 import { OFFICE_PROMPT } from "./office.js";
 import { gmailSection, gmailSearch, gmailRead, gmailDraft } from "./gmail.js";
@@ -112,6 +112,7 @@ function rulesSection(chat) {
 }
 
 async function systemPrompt(chat, prompt) {
+  await skillsReady();
   const skills = activeSkills(prompt);
   let text = BASE_PROMPT + OFFICE_PROMPT + (MODE_PROMPTS[state.settings.mode] || "") + (EFFORT[state.settings.effort] || "") + (STYLES[state.settings.style] || "") + agentSection(chat) + memorySection() + projectSection(chat) + rulesSection(chat) + mcpSection() + gmailSection();
   if (chat.locked?.length) text += `\n\nLocked files (the user froze these; never rewrite or delete them): ${chat.locked.join(", ")}`;

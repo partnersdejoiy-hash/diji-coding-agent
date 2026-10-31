@@ -14,6 +14,10 @@ export async function loadSkills() {
   return allSkills();
 }
 
+// Resolves once the built-in skills are loaded (a message sent right after page load still gets them).
+let loading = null;
+export const skillsReady = () => (builtins.length ? Promise.resolve() : (loading ||= loadSkills()));
+
 export const allSkills = () => [...builtins.map((s) => ({ ...s, builtin: true })), ...state.settings.customSkills];
 
 export async function skillContent(skill) {

@@ -50,6 +50,8 @@ function load() {
       base.projects = Array.isArray(saved.projects) ? saved.projects : [];
       base.activeId = saved.activeId || null;
       base.settings = { ...base.settings, ...saved.settings };
+      // Old Diji Free model names (from the previous free endpoint) now mean "auto".
+      if (base.settings.model?.provider === "diji-free" && ["openai", "openai-fast", "qwen-coder", "mistral", "llama"].includes(base.settings.model.model)) base.settings.model.model = "auto";
       // A deployment default fills in an empty saved server URL (people who never set one).
       if (!base.settings.serverUrl && window.DIJI_CONFIG?.serverUrl) base.settings.serverUrl = window.DIJI_CONFIG.serverUrl;
       // An earlier default saved the shared server's URL without a token; that now means "built-in".
