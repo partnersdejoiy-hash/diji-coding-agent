@@ -9,7 +9,12 @@ const target = () => (process.env.DIJI_BROWSER_URL || "").replace(/\/+$/, "");
 export async function browserProxyHandler(request) {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request) });
   const action = new URL(request.url).pathname.split("/").filter(Boolean).pop();
-  if (action === "health") return json(request, 200, { ok: Boolean(target()), builtin: true });
+  if (action === "health") {
+    // Ask the Chromium server itself, so "available" means it really answers.
+    if (!target()) return json(request, 200, { ok: false, builtin: true });
+    const up = await fetch(`${target()}/api/health`, { signal: AbortSignal.timeout(5000) }).then((r) => r.ok, () => false);
+    return json(request, 200, { ok: up, builtin: true });
+  }
   if (!target()) return json(request, 503, { error: "Diji's cloud browser is not set up on this deployment." });
   if (request.method !== "POST" || !ACTIONS.has(action)) return json(request, 404, { error: "Unknown browser action." });
   const body = await request.text();

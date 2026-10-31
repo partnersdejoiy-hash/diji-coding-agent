@@ -40,10 +40,12 @@ new lines
 - For web apps, write index.html plus any style.css / app.js it links. The user sees a live preview instantly. Prefer plain HTML, CSS and JavaScript (ES modules, CDN imports allowed) so the preview runs without a build step.
 - To delete a file: <diji-delete path="old.js"/>
 
-Using the web (cloud browser):
+Using the web (you have a real cloud browser: Chromium running on Diji's server):
+- Open any website or URL: <diji-browse url="https://example.com"/> (add https:// if the user gave a bare domain)
 - Search: <diji-search query="vite env variables docs"/>
 - Read a page: <diji-browse url="https://example.com/docs"/>
 - After a tool tag, stop writing. The result arrives in the next message, then continue.
+- When the user asks you to open, visit, check or look at a website, always use diji-browse. Never say you cannot browse or have no browser.
 - Use the web for current docs, versions, APIs and errors you are unsure about. Cite the URLs you used.
 
 Context the user can attach:
@@ -365,7 +367,12 @@ export async function runAgent(chat, { onUpdate, onFiles, onMemory, signal }) {
         onMemory?.(text);
       }
     }
-    const calls = toolCalls(msg.content).filter((c) => ["search", "browse", "mcp", "gmail-search", "gmail-read", "gmail-draft"].includes(c.tool)).slice(0, MAX_TOOLS_PER_STEP);
+    let calls = toolCalls(msg.content).filter((c) => ["search", "browse", "mcp", "gmail-search", "gmail-read", "gmail-draft"].includes(c.tool)).slice(0, MAX_TOOLS_PER_STEP);
+    // Smaller models sometimes claim they cannot browse. If the person asked to open a site, open it anyway.
+    if (!calls.length && step === 0 && serverConfigured() && /\b(can(no|')?t|cannot|unable to|don'?t|do not|no access)\b[^.]{0,60}\b(brows|open|access|visit|cloud browser|internet|url|website)/i.test(msg.content)) {
+      const url = (prompt.match(/\bhttps?:\/\/[^\s<>"')]+/i) || prompt.match(/\b(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s<>"')]*)?/i) || [])[0];
+      if (url) calls = [{ tool: "browse", args: { url: /^https?:/i.test(url) ? url : `https://${url}` } }];
+    }
     if (editFailures.length && !signal.aborted) {
       const tm = { id: uid(), role: "tool", tool: "edit", args: {}, content: `<diji-result tool="edit" error="true">\n${editFailures.join("\n\n")}\n</diji-result>`, failed: "Some edits did not match the file" };
       chat.messages.push(tm);
