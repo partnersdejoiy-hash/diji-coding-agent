@@ -167,7 +167,15 @@ async function stream(chat, system, onText, signal, override) {
   const dec = new TextDecoder();
   let text = "";
   for (;;) {
-    const { value, done } = await reader.read();
+    // Free models sometimes stall mid-reply; after 60s of silence treat it as ended so Diji can continue.
+    let idle;
+    const next = await Promise.race([reader.read(), new Promise((r) => (idle = setTimeout(() => r({ stalled: true }), 60000)))]);
+    clearTimeout(idle);
+    if (next.stalled) {
+      reader.cancel().catch(() => {});
+      break;
+    }
+    const { value, done } = next;
     if (done) break;
     text += dec.decode(value, { stream: true });
     onText(text);
