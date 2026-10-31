@@ -30,6 +30,7 @@ const mq = {
 };
 
 const ui = {
+  autoFixes: 0, // automatic preview fixes since the person last sent a message
   busy: false,
   abort: null,
   panelTab: "preview",
@@ -746,6 +747,7 @@ input.addEventListener("paste", (e) => {
 
 $("#composer").addEventListener("submit", (e) => {
   e.preventDefault();
+  ui.autoFixes = 0;
   if (ui.busy) {
     ui.abort?.abort();
     return;
@@ -847,6 +849,15 @@ async function run(chat) {
     updateSend();
     $("#thread").setAttribute("aria-busy", "false");
     renderChatList();
+  }
+  // Like a careful developer: if the fresh build throws errors in the preview, fix them right away (twice at most).
+  if (wroteFiles.length && state.settings.autoFix !== false && chat.id === state.activeId && ui.panelOpen) {
+    await new Promise((r) => setTimeout(r, 2500));
+    if (ui.problems.length && !ui.busy && chat.id === state.activeId && ui.autoFixes < 2) {
+      ui.autoFixes++;
+      toast("The preview showed errors, so Diji is fixing them.", "info", { keep: false });
+      previewHandlers.onFix();
+    }
   }
 }
 
