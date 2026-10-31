@@ -162,6 +162,7 @@ async function stream(chat, system, onText, signal, override) {
     const j = await res.json().catch(() => ({}));
     throw new Error(j.error || `The model request failed (${res.status}).`);
   }
+  stream.lastModel = res.headers.get("x-diji-model") || "";
   const reader = res.body.getReader();
   const dec = new TextDecoder();
   let text = "";
@@ -245,6 +246,25 @@ export async function runAgent(chat, { onUpdate, onFiles, onMemory, signal }) {
       onUpdate(msg);
       throw e;
     }
+    // Reasoning models sometimes spend the whole budget thinking: ask once for the answer itself.
+    const think = msg.content.indexOf("<think>");
+    if (think !== -1 && !msg.content.includes("</think>") && !signal.aborted) {
+      const base = msg.content + "</think>";
+      try {
+        await stream(chat, system, (t) => {
+          msg.content = base + t.replace(/<think>[\s\S]*?(<\/think>|$)/g, "");
+          onUpdate(msg);
+        }, signal, {
+          messages: (() => {
+            const ms = apiMessages(chat).slice(0, -1);
+            const nudge = "\n\n(You already planned this. Do not think out loud any more: write the final answer and the complete files now.)";
+            const last = ms.at(-1);
+            if (last?.role === "user") ms[ms.length - 1] = { ...last, content: typeof last.content === "string" ? last.content + nudge : [...last.content, { type: "text", text: nudge }] };
+            return ms;
+          })(),
+        });
+      } catch {}
+    }
     // Long files can hit the model's output limit mid-file: ask it to carry on and stitch the parts.
     for (let more = 0; more < 3 && !signal.aborted; more++) {
       const tail = segments(msg.content).at(-1);
@@ -263,6 +283,7 @@ export async function runAgent(chat, { onUpdate, onFiles, onMemory, signal }) {
       if (msg.content === base) break;
     }
     msg.streaming = false;
+    if (stream.lastModel) msg.model = stream.lastModel;
     msg.tokens = Math.round(msg.content.length / 4);
     let changed = [];
     const changes = fileChanges(segments(msg.content));

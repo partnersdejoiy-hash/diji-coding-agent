@@ -34,9 +34,9 @@ async function readJson(request, max = MAX_BODY) {
 export async function chatHandler(request) {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request) });
   if (request.method !== "POST") return json(request, 405, { error: "Use POST." });
-  let gen, first;
+  let gen, first, body;
   try {
-    const body = await readJson(request);
+    body = await readJson(request);
     gen = streamChat(body, request.signal);
     // Pull the first piece before answering so setup errors become a clean JSON error, not a broken stream.
     first = await gen.next();
@@ -59,7 +59,7 @@ export async function chatHandler(request) {
     },
   });
   return new Response(stream, {
-    headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-cache, no-transform", "x-accel-buffering": "no", ...corsHeaders(request) },
+    headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-cache, no-transform", "x-accel-buffering": "no", "x-diji-model": String(body.usedModel || body.model || "").slice(0, 120), "access-control-expose-headers": "x-diji-model", ...corsHeaders(request) },
   });
 }
 
