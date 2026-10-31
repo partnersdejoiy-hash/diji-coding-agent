@@ -2,7 +2,7 @@
 import { streamChat, listModels, HttpError } from "./llm.js";
 import { deployWorkspace } from "./deploy.js";
 
-const MAX_BODY = 2_000_000;
+const MAX_BODY = 4_000_000; // room for a few compressed screenshots
 
 export function corsHeaders(request) {
   const allowed = (process.env.CORS_ORIGIN || "*").split(",").map((s) => s.trim());

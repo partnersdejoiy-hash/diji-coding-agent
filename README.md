@@ -28,6 +28,29 @@
 |---|---|---|
 | ![Phone](docs/phone.jpg) | ![Skills](docs/skills.jpg) | ![Cloud browser](docs/cloud-browser.jpg) |
 
+## Vibe-coding features
+
+Inspired by the best open-source builders ([bolt.diy](https://github.com/stackblitz-labs/bolt.diy), [Dyad](https://github.com/dyad-sh/dyad), [Cline](https://github.com/cline/cline)) and built natively into Diji:
+
+| Feature | What it does |
+|---|---|
+| **Build / Plan / Ask modes** | Plan thinks it through with no file changes, then *Build it* in one click; Ask explains without touching code (Cline plan/act). |
+| **Checkpoints & History** | Every change is a version with per-file `+/−` stats. Restore any version, or undo one reply from the chat (Cline, bolt.diy). |
+| **Diff view & review mode** | See exactly what changed in a file; optionally approve or reject each change before it lands (Cline approvals). |
+| **Fix with Diji** | The live preview catches runtime errors and failed loads; one click sends them to Diji to fix (Dyad). |
+| **Select element** | Click any element in the preview and tell Diji what to change about it (Dyad). |
+| **Images & mockups** | Paste or attach screenshots and sketches; vision models rebuild them (bolt.diy). |
+| **Voice prompting** | Talk to Diji with the mic button (bolt.diy). |
+| **Prompt enhancer** | Turns a rough idea into a detailed build prompt (bolt.diy). |
+| **Templates** | Start from React, Tailwind, Three.js, dashboard, portfolio or game starters (bolt.diy, Dyad). |
+| **@mentions** | `@file.js` pulls a workspace file into the message; `@https://…` reads a page with the cloud browser first. |
+| **Project rules** | Global rules in Settings plus `.dijirules`, `AGENTS.md`, `.clinerules` or `.cursorrules` in the workspace (Cline). |
+| **File locks** | Lock a file and Diji will never change it (bolt.diy). |
+| **Code editor & search** | Edit any file by hand (Ctrl+S saves a checkpoint) and search across all files (bolt.diy). |
+| **Import from GitHub** | Bring a public (or, with a token, private) repo into a chat (bolt.diy git clone). |
+| **Open in StackBlitz** | Run full Node/npm projects (Vite, Next.js…) in the browser for free (bolt.diy runs on the same WebContainer engine). |
+| **Token estimate** | Each reply shows roughly how many tokens it used. |
+
 ## Architecture
 
 ```mermaid

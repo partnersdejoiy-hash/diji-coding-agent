@@ -22,6 +22,9 @@ const defaults = () => ({
     systemNotify: false,
     temperature: 0.4,
     autoSkills: true,
+    mode: "build", // build | plan | ask
+    autoApply: true, // false = review every change before it touches files
+    rules: "", // project rules sent with every request
     skills: [], // manually pinned skill ids
     customSkills: [], // { id, name, description, tags, content }
     sidebarOpen: true,
@@ -71,7 +74,11 @@ export function save() {
       // Quota exceeded: drop the oldest chats' tool output and retry once.
       if (state.chats.length > 1 && !save.retried) {
         save.retried = true;
-        for (const c of state.chats.slice(Math.ceil(state.chats.length / 2))) c.messages = c.messages.filter((m) => m.role !== "tool");
+        for (const c of state.chats.slice(Math.ceil(state.chats.length / 2))) {
+          c.messages = c.messages.filter((m) => m.role !== "tool");
+          c.messages.forEach((m) => delete m.images);
+          if (c.versions) c.versions = c.versions.slice(-3);
+        }
         save();
       }
     }

@@ -263,6 +263,10 @@ function renderPrefs(body) {
       ${["system", "light", "dark"].map((t) => `<label><input type="radio" name="theme" value="${t}"${s.theme === t ? " checked" : ""}><span>${icon({ system: "monitor", light: "sun", dark: "moon" }[t], 15)} ${t[0].toUpperCase() + t.slice(1)}</span></label>`).join("")}
     </div></fieldset>
     <label class="switch"><input type="checkbox" id="penter"${s.enterToSend ? " checked" : ""}><span class="track"></span><span>Enter sends, Shift+Enter adds a line</span></label>
+    <label class="switch"><input type="checkbox" id="papply"${s.autoApply !== false ? " checked" : ""}><span class="track"></span><span>Apply Diji's file changes automatically (off = review and approve each change)</span></label>
+    <label class="field"><span>Project rules</span>
+      <textarea id="prules" rows="5" placeholder="Rules Diji always follows, e.g.&#10;- Use TypeScript and Tailwind&#10;- Mobile first, no external UI libraries&#10;- Comments in English">${esc(s.rules || "")}</textarea>
+      <small class="muted">Also picked up from a .dijirules, AGENTS.md, .clinerules or .cursorrules file in the workspace.</small></label>
     <label class="switch"><input type="checkbox" id="pnotify"${s.systemNotify ? " checked" : ""}><span class="track"></span><span>Notify me when Diji finishes while I am in another tab</span></label>
     <label class="field"><span>Creativity <output id="ptempv">${s.temperature}</output></span>
       <input type="range" id="ptemp" min="0" max="1.2" step="0.1" value="${s.temperature}"><small class="muted">Lower is more precise, higher is more inventive.</small></label>`;
@@ -278,6 +282,14 @@ function renderPrefs(body) {
   $("#pnotify", body).onchange = async (e) => {
     if (e.target.checked && !(await askNotifyPermission())) e.target.checked = false;
     s.systemNotify = e.target.checked;
+    save();
+  };
+  $("#papply", body).onchange = (e) => {
+    s.autoApply = e.target.checked;
+    save();
+  };
+  $("#prules", body).oninput = (e) => {
+    s.rules = e.target.value.slice(0, 8000);
     save();
   };
   $("#ptemp", body).oninput = (e) => {

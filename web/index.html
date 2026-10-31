@@ -67,8 +67,11 @@
           <div class="composer-row">
             <button type="button" class="icon-btn" id="attach-btn" aria-label="Attach files"></button>
             <input type="file" id="file-input" multiple hidden>
+            <button type="button" class="chip-btn mode-btn" id="mode-btn" aria-haspopup="listbox"></button>
             <button type="button" class="chip-btn" id="skills-btn" aria-haspopup="dialog"></button>
             <div class="spacer"></div>
+            <button type="button" class="icon-btn" id="enhance-btn" aria-label="Enhance prompt" title="Enhance prompt"></button>
+            <button type="button" class="icon-btn" id="mic-btn" aria-label="Talk to Diji" aria-pressed="false" title="Voice input"></button>
             <button type="button" class="model-btn" id="model-btn" aria-haspopup="listbox"></button>
             <button type="submit" class="send" id="send-btn" aria-label="Send"></button>
           </div>
@@ -82,7 +85,8 @@
         <div class="tabs" role="tablist">
           <button role="tab" class="tab" data-tab="preview" aria-selected="true">Preview</button>
           <button role="tab" class="tab" data-tab="code" aria-selected="false">Code</button>
-          <button role="tab" class="tab" data-tab="browser" aria-selected="false">Browser</button>
+          <button role="tab" class="tab" data-tab="history" aria-selected="false">History</button>
+          <button role="tab" class="tab" data-tab="browser" aria-selected="false"><span class="t-full">Browser</span><span class="t-short">Web</span></button>
         </div>
         <div class="panel-actions">
           <button class="icon-btn" id="open-tab" aria-label="Open preview in a new tab"></button>
@@ -99,6 +103,8 @@
   <div class="popover" id="model-pop" role="listbox" aria-label="Choose a model" hidden></div>
   <div class="popover notif-pop" id="notif-pop" role="dialog" aria-label="Notifications" hidden></div>
   <div class="popover ship-pop" id="ship-pop" role="dialog" aria-labelledby="ship-title" hidden></div>
+  <div class="popover" id="mode-pop" role="listbox" aria-label="Choose a mode" hidden></div>
+  <div class="popover mention-pop" id="mention-pop" role="listbox" aria-label="Mention a file" hidden></div>
   <dialog class="modal" id="settings-modal" aria-labelledby="settings-title"></dialog>
   <dialog class="modal" id="skills-modal" aria-labelledby="skills-title"></dialog>
   <div class="toasts" id="toasts" aria-live="polite"></div>

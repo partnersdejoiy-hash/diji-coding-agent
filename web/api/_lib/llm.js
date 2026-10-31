@@ -165,7 +165,7 @@ async function* streamAnthropic(t, { system, messages, temperature, maxTokens },
       temperature,
       stream: true,
       ...(system ? { system } : {}),
-      messages: messages.filter((m) => m.role !== "system"),
+      messages: messages.filter((m) => m.role !== "system").map((m) => ({ role: m.role, content: toAnthropic(m.content) })),
     }),
   });
   if (!res.ok || !res.body) throw await upstreamError(res, "Anthropic");
@@ -182,18 +182,47 @@ async function* streamAnthropic(t, { system, messages, temperature, maxTokens },
   }
 }
 
+// Content is a string, or OpenAI-style parts: {type:"text",text} and {type:"image_url",image_url:{url}}.
+function cleanContent(c) {
+  if (typeof c === "string") return c.slice(0, 200_000);
+  if (!Array.isArray(c)) return null;
+  const parts = [];
+  for (const p of c.slice(0, 8)) {
+    if (p?.type === "text" && typeof p.text === "string") parts.push({ type: "text", text: p.text.slice(0, 200_000) });
+    const url = p?.type === "image_url" && p.image_url?.url;
+    if (typeof url === "string" && (/^data:image\/(png|jpe?g|webp|gif);base64,/.test(url) || /^https:\/\//.test(url))) parts.push({ type: "image_url", image_url: { url } });
+  }
+  return parts.length ? parts : null;
+}
+
+const asParts = (c) => (typeof c === "string" ? [{ type: "text", text: c }] : c);
+
 function cleanMessages(messages) {
   if (!Array.isArray(messages) || messages.length === 0) throw new HttpError(400, "No messages to send.");
   const out = [];
   for (const m of messages.slice(-60)) {
-    if (!m || (m.role !== "user" && m.role !== "assistant") || typeof m.content !== "string") continue;
+    if (!m || (m.role !== "user" && m.role !== "assistant")) continue;
+    const content = cleanContent(m.content);
+    if (content === null) continue;
     const last = out[out.length - 1];
     // Anthropic rejects two turns in a row from the same role, so merge them.
-    if (last && last.role === m.role) last.content += "\n\n" + m.content;
-    else out.push({ role: m.role, content: m.content.slice(0, 200_000) });
+    if (last && last.role === m.role) {
+      last.content = typeof last.content === "string" && typeof content === "string" ? last.content + "\n\n" + content : [...asParts(last.content), ...asParts(content)];
+    } else out.push({ role: m.role, content });
   }
   if (!out.length || out[0].role !== "user") out.unshift({ role: "user", content: "(conversation start)" });
   return out;
+}
+
+// Anthropic wants {type:"image", source:{...}} instead of image_url parts.
+function toAnthropic(content) {
+  if (typeof content === "string") return content;
+  return content.map((p) => {
+    if (p.type === "text") return p;
+    const url = p.image_url.url;
+    const m = url.match(/^data:(image\/[\w+.-]+);base64,(.*)$/);
+    return m ? { type: "image", source: { type: "base64", media_type: m[1], data: m[2] } } : { type: "image", source: { type: "url", url } };
+  });
 }
 
 // Streams plain text. Tries each target in order until one starts answering.

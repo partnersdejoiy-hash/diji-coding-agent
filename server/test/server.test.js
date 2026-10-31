@@ -147,3 +147,16 @@ test("Diji's built-in browser proxy relays to the Chromium server with the serve
   const bad = await browserProxyHandler(new Request("http://site/api/browser/evil", { method: "POST", body: "{}" }));
   assert.equal(bad.status, 404);
 });
+
+test("image messages (OpenAI parts) pass through the proxy, bad image URLs are dropped", async () => {
+  const res = await post("/api/chat", {
+    provider: "custom", baseUrl: fakeUrl, apiKey: "test-key", model: "fake", system: "s",
+    messages: [{ role: "user", content: [
+      { type: "text", text: "what is this" },
+      { type: "image_url", image_url: { url: "data:image/png;base64,iVBORw0KGgo=" } },
+      { type: "image_url", image_url: { url: "javascript:alert(1)" } },
+    ] }],
+  });
+  assert.equal(res.status, 200);
+  assert.equal(await res.text(), "Hello from Diji");
+});

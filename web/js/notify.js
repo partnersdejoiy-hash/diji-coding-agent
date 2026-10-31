@@ -33,7 +33,7 @@ export function toast(message, type = "info", { title, action, keep = true, ms =
   };
   el.querySelector(".toast-x").onclick = close;
   region.append(el);
-  if (region.children.length > 4) region.firstElementChild.remove();
+  while (region.children.length > 2) region.firstElementChild.remove(); // keep the screen calm; the bell keeps history
   setTimeout(close, type === "error" ? ms * 2 : ms);
 
   if (keep) {

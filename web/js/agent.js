@@ -3,7 +3,8 @@
 import { state, providerSettings, apiBase, serverHeaders, uid, save } from "./store.js";
 import { providerById } from "../shared/catalog.js";
 import { segments, toolCalls } from "./markdown.js";
-import { applyFiles } from "./workspace.js";
+import { fileChanges } from "./workspace.js";
+import { commitChanges } from "./versions.js";
 import { browserCall, serverConfigured } from "./browser.js";
 import { activeSkills, skillContent } from "./skills.js";
 
@@ -32,7 +33,13 @@ Using the web (cloud browser):
 - Search: <diji-search query="vite env variables docs"/>
 - Read a page: <diji-browse url="https://example.com/docs"/>
 - After a tool tag, stop writing. The result arrives in the next message, then continue.
-- Use the web for current docs, versions, APIs and errors you are unsure about. Cite the URLs you used.`;
+- Use the web for current docs, versions, APIs and errors you are unsure about. Cite the URLs you used.
+
+Context the user can attach:
+- Images are screenshots, mockups or sketches: match their layout, spacing and colours closely.
+- <selected-element> is an element the user clicked in the live preview: change that element (and only what the request needs around it).
+- <mentioned-file> and <mentioned-page> are files and web pages the user pointed you to with @.
+- When the user sends preview errors, find the root cause and send the fixed files.`;
 
 function workspaceSection(files) {
   const paths = Object.keys(files);
@@ -51,9 +58,23 @@ function workspaceSection(files) {
   return `\n\nCurrent workspace files (edit by re-sending the whole file with file=path):\n${blocks.join("\n")}`;
 }
 
+const MODE_PROMPTS = {
+  plan: `\n\n## PLAN MODE (active)\nDo not write or change any files in this reply. Study the request and the workspace, then reply with: a one-line goal, the files you will create or change (and why), the key decisions with your recommendation, and a short numbered build plan. Ask at most one question if something is truly undecided. End with: "Switch to Build and I will make it."`,
+  ask: `\n\n## ASK MODE (active)\nAnswer, explain or review only. Do not write or change any files in this reply. Quote short code snippets in normal fenced blocks without file= when they help.`,
+};
+
+// Project rules, like Cline's .clinerules: global ones from Settings, plus a rules file in the workspace.
+function rulesSection(chat) {
+  const parts = [];
+  if (state.settings.rules?.trim()) parts.push(state.settings.rules.trim());
+  for (const f of [".dijirules", "AGENTS.md", ".clinerules", ".cursorrules"]) if (chat.files[f]?.trim()) parts.push(`From ${f}:\n${chat.files[f].trim().slice(0, 8000)}`);
+  return parts.length ? `\n\n## Project rules (always follow)\n${parts.join("\n\n")}` : "";
+}
+
 async function systemPrompt(chat, prompt) {
   const skills = activeSkills(prompt);
-  let text = BASE_PROMPT;
+  let text = BASE_PROMPT + (MODE_PROMPTS[state.settings.mode] || "") + rulesSection(chat);
+  if (chat.locked?.length) text += `\n\nLocked files (the user froze these; never rewrite or delete them): ${chat.locked.join(", ")}`;
   if (!serverConfigured()) text += "\n\nNote: the cloud browser is offline right now, so do not use diji-search or diji-browse. Answer from what you know and say when something may be out of date.";
   if (skills.length) {
     const bodies = await Promise.all(skills.map(async (s) => `### Skill: ${s.name}\n${await skillContent(s).catch(() => s.description)}`));
@@ -63,12 +84,19 @@ async function systemPrompt(chat, prompt) {
 }
 
 function apiMessages(chat) {
-  return chat.messages
-    .filter((m) => m.content && !m.error)
-    .map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.role === "tool" ? m.content : m.content + (m.attachments || "") }));
+  const msgs = chat.messages.filter((m) => m.content && !m.error);
+  // Only the most recent message with images sends them; older ones keep a short note to save tokens.
+  const lastImg = msgs.findLastIndex((m) => m.images?.length);
+  return msgs.map((m, i) => {
+    const role = m.role === "assistant" ? "assistant" : "user";
+    const text = m.role === "tool" ? m.content : m.content + (m.attachments || "");
+    if (!m.images?.length) return { role, content: text };
+    if (i !== lastImg) return { role, content: `${text}\n\n(${m.images.length} image${m.images.length > 1 ? "s" : ""} attached earlier)` };
+    return { role, content: [{ type: "text", text }, ...m.images.map((url) => ({ type: "image_url", image_url: { url } }))] };
+  });
 }
 
-async function stream(chat, system, onText, signal) {
+async function stream(chat, system, onText, signal, override) {
   const s = state.settings;
   const p = providerById(s.model.provider);
   const ps = providerSettings(s.model.provider);
@@ -84,7 +112,8 @@ async function stream(chat, system, onText, signal) {
       kind: ps.kind,
       temperature: s.temperature,
       system,
-      messages: apiMessages(chat),
+      messages: override?.messages || apiMessages(chat),
+      ...(override?.maxTokens ? { maxTokens: override.maxTokens } : {}),
     }),
   });
   if (!res.ok) {
@@ -130,7 +159,7 @@ export async function runAgent(chat, { onUpdate, onFiles, signal }) {
   const prompt = [...chat.messages].reverse().find((m) => m.role === "user")?.content || "";
   for (let step = 0; step < MAX_STEPS; step++) {
     const { text: system, skills } = await systemPrompt(chat, prompt);
-    const msg = { id: uid(), role: "assistant", content: "", streaming: true, model: `${state.settings.model.model}`, skills: skills.map((s) => s.name) };
+    const msg = { id: uid(), role: "assistant", content: "", streaming: true, model: `${state.settings.model.model}`, mode: state.settings.mode || "build", skills: skills.map((s) => s.name) };
     chat.messages.push(msg);
     onUpdate(msg);
     try {
@@ -151,8 +180,20 @@ export async function runAgent(chat, { onUpdate, onFiles, signal }) {
       throw e;
     }
     msg.streaming = false;
-    const segs = segments(msg.content);
-    const changed = applyFiles(chat, segs);
+    msg.tokens = Math.round(msg.content.length / 4);
+    let changed = [];
+    const changes = fileChanges(segments(msg.content));
+    const count = Object.keys(changes).length;
+    if (count && state.settings.mode && state.settings.mode !== "build") {
+      msg.ignored = count; // plan/ask replies never touch files
+    } else if (count && state.settings.autoApply === false) {
+      msg.pending = changes; // review mode: the user applies or rejects
+    } else if (count) {
+      const r = commitChanges(chat, changes, prompt.replace(/\s+/g, " ") || "Diji's change", msg.id);
+      msg.changes = r.summary;
+      msg.skipped = r.skipped;
+      changed = r.summary.map((x) => x.path);
+    }
     if (changed.length) onFiles(changed);
     onUpdate(msg);
     save();
@@ -179,6 +220,19 @@ export async function runAgent(chat, { onUpdate, onFiles, signal }) {
     save();
   }
   return {};
+}
+
+// Prompt enhancer (bolt.diy-style): turns a rough idea into a specific build prompt.
+export async function enhancePrompt(text, signal) {
+  const out = await stream(
+    { messages: [] },
+    "You rewrite a user's rough request for a coding agent into one clear, specific prompt. Keep their intent and language. Add concrete details the agent needs: purpose, key screens or features, look and feel, tech choice (prefer plain HTML/CSS/JS unless they named a stack), and must-haves like responsive layout. Reply with only the improved prompt, no preamble, no quotes, under 120 words.",
+    () => {},
+    signal,
+    { messages: [{ role: "user", content: text }], maxTokens: 400 },
+  );
+  if (out.includes("<diji-error>")) throw new Error(out.replace(/[\s\S]*<diji-error>|<\/diji-error>[\s\S]*/g, ""));
+  return out.trim().replace(/^["“]|["”]$/g, "");
 }
 
 // Quick connectivity check used by Settings → Test.
