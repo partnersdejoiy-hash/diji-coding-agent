@@ -44,6 +44,25 @@ export function parseAttrs(s) {
   return out;
 }
 
+// Smaller models write tool calls in other common shapes; turn them into Diji's tags.
+const TOOL_NAMES = "browse|search|delete|remember|gmail-search|gmail-read";
+function normalizeTools(t) {
+  return t
+    .replace(/<tool_call>\s*(\{[\s\S]*?\})\s*<\/tool_call>/g, (all, json) => {
+      try {
+        const j = JSON.parse(json);
+        const name = String(j.name || j.tool || "").replace(/^diji[-_]/, "").replace(/_/g, "-");
+        const args = j.arguments || j.args || j.parameters || {};
+        if (!new RegExp(`^(${TOOL_NAMES})$`).test(name)) return all;
+        return `<diji-${name} ${Object.entries(args).map(([k, v]) => `${k}="${String(v).replace(/"/g, "'")}"`).join(" ")}/>`;
+      } catch {
+        return all;
+      }
+    })
+    .replace(/<\/?tool_call>/g, "")
+    .replace(new RegExp(`(^|[^<\\w-])(diji-(?:${TOOL_NAMES})\\s+\\w+="[^"]*"[^<>\\n]*?\\/?>)`, "g"), "$1<$2");
+}
+
 // Tool calls the model asked for, in order. Ignores anything inside code fences.
 export function toolCalls(text) {
   return segments(text).filter((s) => s.type === "tool");
@@ -63,7 +82,7 @@ export function segments(text) {
   let buf = [];
   const flush = () => {
     if (!buf.length) return;
-    const t = buf.join("\n");
+    const t = normalizeTools(buf.join("\n"));
     buf = [];
     let last = 0;
     for (const m of t.matchAll(/<diji-error>([\s\S]*?)<\/diji-error>|<diji-(mcp|gmail-draft|edit)\b([^>]*)>([\s\S]*?)<\/diji-\2>|<diji-(browse|search|delete|remember|gmail-search|gmail-read)\b([^>]*?)\/?>(?:\s*<\/diji-\5>)?/g)) {
