@@ -89,3 +89,37 @@ export function previousContent(chat, path) {
   }
   return ""; // unchanged since it was created: show the whole file as added
 }
+
+// Applies SEARCH/REPLACE blocks (Aider/Cline style) to a file. Exact match first, then a match
+// that ignores indentation and trailing spaces. Returns { text, failed: [search snippets] }.
+export function applyEdits(text, body) {
+  const blocks = [...String(body || "").matchAll(/<{5,}\s*SEARCH\s*\n([\s\S]*?)\n?={5,}\s*\n([\s\S]*?)\n?>{5,}\s*REPLACE/g)];
+  const failed = [];
+  let out = String(text ?? "");
+  if (!blocks.length) return { text: out, failed: ["(no SEARCH/REPLACE blocks found)"] };
+  for (const [, search, replace] of blocks) {
+    if (!search.trim()) {
+      out = out + (out.endsWith("\n") || !out ? "" : "\n") + replace; // empty SEARCH appends
+      continue;
+    }
+    const i = out.indexOf(search);
+    if (i !== -1) {
+      out = out.slice(0, i) + replace + out.slice(i + search.length);
+      continue;
+    }
+    const lines = out.split("\n");
+    const want = search.split("\n").map((l) => l.trim());
+    while (want.length && !want.at(-1)) want.pop();
+    let hit = -1;
+    for (let k = 0; k + want.length <= lines.length && hit === -1; k++) {
+      if (want.every((w, j) => lines[k + j].trim() === w)) hit = k;
+    }
+    if (hit === -1) {
+      failed.push(search.split("\n").slice(0, 3).join("\n"));
+      continue;
+    }
+    lines.splice(hit, want.length, ...replace.split("\n"));
+    out = lines.join("\n");
+  }
+  return { text: out, failed };
+}

@@ -317,10 +317,11 @@ function messageEl(m) {
 }
 
 function fillTool(node, m) {
-  if (m.tool === "mcp" || m.tool.startsWith("gmail-")) {
+  if (m.tool === "mcp" || m.tool === "edit" || m.tool.startsWith("gmail-")) {
     const a = m.args || {};
     const label = {
       mcp: [`Using ${esc(a.server)} · ${esc(a.tool)}…`, `Used ${esc(a.server)} · ${esc(a.tool)}`, "plug"],
+      edit: ["Checking edits…", "An edit did not match the file, so Diji is retrying", "pencil"],
       "gmail-search": [`Searching Gmail for “${esc(a.query || "inbox")}”…`, `Searched Gmail for “${esc(a.query || "inbox")}”`, "mail"],
       "gmail-read": ["Opening an email…", "Read an email", "mail"],
       "gmail-draft": ["Writing a Gmail draft…", `Saved a draft to ${esc(a.to || "")} in Gmail`, "mail"],
@@ -370,6 +371,15 @@ function fillAssistant(node, m) {
       if (s.type === "text") html += `<div class="md">${renderMarkdown(s.text)}</div>`;
       else if (s.type === "file") html += fileCard(s, chat, m) + (isOffice(s.path) && s.done && !m.streaming ? `<button type="button" class="office-dl" data-office-dl="${esc(s.path)}">${icon({ docx: "doc", pptx: "slides", xlsx: "sheet" }[s.path.split(".").pop().toLowerCase()], 15)} Download ${esc(s.path.split("/").pop())}</button>` : "");
       else if (s.type === "error") html += `<div class="callout err">${icon("alert", 16)}<span>${esc(s.text)}</span></div>`;
+      else if (s.type === "tool" && s.tool === "edit") {
+        const n = (s.args.input.match(/>{5,}\s*REPLACE/g) || []).length;
+        const ch = m.changes?.find((c) => c.path === s.args.path);
+        const stat = ch ? `<span class="stat"><span class="plus">+${ch.added}</span> <span class="minus">−${ch.removed}</span></span>` : m.pending && s.args.path in m.pending ? "<span>Waiting for your review</span>" : "";
+        html += `<button class="file-card${s.open ? " writing" : ""}" data-file="${esc(s.args.path || "")}">
+          <span class="file-ic">${icon("pencil", 16)}</span>
+          <span class="file-meta"><strong>${esc(s.args.path || "file")}</strong><span>${s.open ? "Editing…" : `Edited · ${n} change${n === 1 ? "" : "s"}`} ${s.open ? "" : stat}</span></span>
+          <span class="file-go">${s.open ? '<span class="spinner"></span>' : icon("chevronRight", 16)}</span></button>`;
+      }
       else if (s.type === "tool" && s.tool === "delete") html += `<div class="chip-note">${icon("trash", 13)} Deleted ${esc(s.args.path || "")}</div>`;
       else if (s.type === "tool" && s.tool === "remember") html += `<div class="chip-note">${icon("brain", 13)} Remembered: ${esc(s.args.text || "")}</div>`;
       else if (s.type === "thinking") html += `<details class="think"${s.done ? "" : " open"}><summary>${icon("sparkles", 14)} ${s.done ? "Thought process" : "Thinking…"}</summary><div class="think-body">${esc(s.text)}</div></details>`;
@@ -1054,7 +1064,7 @@ const previewHandlers = {
     ui.problems = [];
     renderPanel();
     if (state.settings.mode !== "build") setMode("build");
-    send(`The live preview reports these errors. Find the cause and fix them:\n${list}`);
+    send(`The live preview reports these errors. Find the cause and fix them with a small diji-edit (do not resend the whole file):\n${list}`);
   },
 };
 

@@ -66,14 +66,22 @@ export function segments(text) {
     const t = buf.join("\n");
     buf = [];
     let last = 0;
-    for (const m of t.matchAll(/<diji-error>([\s\S]*?)<\/diji-error>|<diji-(mcp|gmail-draft)\b([^>]*)>([\s\S]*?)<\/diji-\2>|<diji-(browse|search|delete|remember|gmail-search|gmail-read)\b([^>]*?)\/?>(?:\s*<\/diji-\5>)?/g)) {
+    for (const m of t.matchAll(/<diji-error>([\s\S]*?)<\/diji-error>|<diji-(mcp|gmail-draft|edit)\b([^>]*)>([\s\S]*?)<\/diji-\2>|<diji-(browse|search|delete|remember|gmail-search|gmail-read)\b([^>]*?)\/?>(?:\s*<\/diji-\5>)?/g)) {
       if (m.index > last) out.push({ type: "text", text: t.slice(last, m.index) });
       if (m[1] !== undefined) out.push({ type: "error", text: m[1] });
       else if (m[2] !== undefined) out.push({ type: "tool", tool: m[2], args: { ...parseAttrs(m[3]), input: m[4].trim() } });
       else out.push({ type: "tool", tool: m[5], args: parseAttrs(m[6]) });
       last = m.index + m[0].length;
     }
-    if (last < t.length) out.push({ type: "text", text: t.slice(last) });
+    if (last < t.length) {
+      // An edit still being written: show it as a pending card instead of raw code.
+      const rest = t.slice(last);
+      const open = rest.match(/<diji-edit\b([^>]*)>/);
+      if (open) {
+        if (open.index) out.push({ type: "text", text: rest.slice(0, open.index) });
+        out.push({ type: "tool", tool: "edit", args: { ...parseAttrs(open[1]), input: rest.slice(open.index + open[0].length) }, open: true });
+      } else out.push({ type: "text", text: rest });
+    }
   };
   const lines = (text || "").split("\n");
   let fence = null; // { ticks, file?, lang, body: [] }

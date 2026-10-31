@@ -4,7 +4,7 @@ import { state, providerSettings, apiBase, serverHeaders, uid, save, projectOf }
 import { providerById } from "../shared/catalog.js";
 import { segments, toolCalls } from "./markdown.js";
 import { fileChanges } from "./workspace.js";
-import { commitChanges } from "./versions.js";
+import { commitChanges, applyEdits } from "./versions.js";
 import { browserCall, serverConfigured } from "./browser.js";
 import { activeSkills, skillContent, skillsReady } from "./skills.js";
 import { agentSection, mcpSection, callMcp } from "./agents.js";
@@ -28,7 +28,15 @@ Writing files (the user's workspace):
 \`\`\`html file=index.html
 <!doctype html>...
 \`\`\`
-- Always send the whole file, even when changing one line. The workspace keeps the latest version.
+- New files and big rewrites: send the whole file.
+- Small changes to an existing file (a bug fix, a tweak, one section): send only what changes, as an edit. SEARCH must copy the current lines exactly (include enough lines to be unique); several pairs can go in one edit:
+<diji-edit path="index.html">
+<<<<<<< SEARCH
+exact current lines
+=======
+new lines
+>>>>>>> REPLACE
+</diji-edit>
 - For web apps, write index.html plus any style.css / app.js it links. The user sees a live preview instantly. Prefer plain HTML, CSS and JavaScript (ES modules, CDN imports allowed) so the preview runs without a build step.
 - To delete a file: <diji-delete path="old.js"/>
 
@@ -303,7 +311,21 @@ export async function runAgent(chat, { onUpdate, onFiles, onMemory, signal }) {
     if (stream.lastModel) msg.model = stream.lastModel;
     msg.tokens = Math.round(msg.content.length / 4);
     let changed = [];
-    const changes = fileChanges(segments(msg.content));
+    const segs = segments(msg.content);
+    const changes = fileChanges(segs);
+    // Edits (SEARCH/REPLACE) build on the file as this reply left it.
+    const editFailures = [];
+    for (const e of segs.filter((x) => x.type === "tool" && x.tool === "edit" && !x.open && x.args.path)) {
+      const path = e.args.path.replace(/^\.?\//, "");
+      const base = path in changes ? changes[path] : chat.files[path];
+      if (base == null) {
+        editFailures.push(`${path} does not exist. Send the whole file instead.`);
+        continue;
+      }
+      const r = applyEdits(base, e.args.input);
+      if (r.failed.length) editFailures.push(`In ${path}, these SEARCH lines were not found (copy them exactly from the current file, or send the whole file):\n${r.failed.join("\n---\n")}`);
+      if (r.text !== base) changes[path] = r.text;
+    }
     // A full HTML page in an unnamed block (common with smaller models) becomes index.html.
     if (!Object.keys(changes).length && (state.settings.mode || "build") === "build") {
       const page = msg.content.replace(/<think>[\s\S]*?(<\/think>|$)/g, "").match(/```html?[^\n]*\n([\s\S]*?<\/html>)\s*```/i);
@@ -335,6 +357,12 @@ export async function runAgent(chat, { onUpdate, onFiles, onMemory, signal }) {
       }
     }
     const calls = toolCalls(msg.content).filter((c) => ["search", "browse", "mcp", "gmail-search", "gmail-read", "gmail-draft"].includes(c.tool)).slice(0, MAX_TOOLS_PER_STEP);
+    if (editFailures.length && !signal.aborted) {
+      const tm = { id: uid(), role: "tool", tool: "edit", args: {}, content: `<diji-result tool="edit" error="true">\n${editFailures.join("\n\n")}\n</diji-result>`, failed: "Some edits did not match the file" };
+      chat.messages.push(tm);
+      onUpdate(tm);
+      if (!calls.length) continue;
+    }
     if (!calls.length || signal.aborted) return { files: changed };
     for (const call of calls) {
       const tm = { id: uid(), role: "tool", tool: call.tool, args: call.args, content: "", pending: true };
