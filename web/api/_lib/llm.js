@@ -20,6 +20,27 @@ function freeTargets(model) {
   ];
 }
 
+// Diji Code: Diji's own model tier on OpenCode Zen with the server's key (DIJI_CODE_API_KEY).
+// Claude models on Zen speak the Anthropic Messages API; the rest are OpenAI-compatible.
+// Without a key it quietly uses the free tier, so the app always answers.
+const CODE_DEFAULT = "kimi-k2.7-code,deepseek-v4.1-flash,glm-5.3";
+const codeModels = () => (env("DIJI_CODE_MODEL") || CODE_DEFAULT).split(",").map((m) => m.trim()).filter(Boolean);
+function codeTargets(model) {
+  const key = env("DIJI_CODE_API_KEY");
+  if (!key) return freeTargets(model);
+  const base = env("DIJI_CODE_BASE_URL") || "https://opencode.ai/zen/v1";
+  const models = codeModels();
+  // Only models the operator allows (their list plus Diji's suggestions), so nobody picks an expensive one.
+  if (model && model !== "auto" && (models.includes(model) || providerById("diji-code").models.includes(model))) {
+    const i = models.indexOf(model);
+    if (i !== -1) models.splice(i, 1);
+    models.unshift(model);
+  }
+  const zen = models.map((m) => ({ kind: /^claude-/.test(m) ? "anthropic" : "openai", baseUrl: base, apiKey: key, model: m, bearer: true }));
+  // If every Zen model is busy, the free tier still answers.
+  return env("DIJI_FREE_BASE_URL") ? [...zen, ...freeTargets("auto")] : zen;
+}
+
 export class HttpError extends Error {
   constructor(status, message) {
     super(message);
@@ -57,6 +78,7 @@ export function resolveTargets({ provider, model, apiKey, baseUrl, kind }) {
   if (!p) throw new HttpError(400, `Unknown provider "${provider}".`);
   if (!model || typeof model !== "string") throw new HttpError(400, "Pick a model first.");
   if (p.id === "diji-free") return freeTargets(model);
+  if (p.id === "diji-code") return codeTargets(model);
   const base = (p.custom ? baseUrl : p.baseUrl) || "";
   if (!base) throw new HttpError(400, `${p.name} needs a base URL. Add it in Settings → Models.`);
   if (p.custom) assertPublicUrl(base);
@@ -181,7 +203,7 @@ async function* streamAnthropic(t, { system, messages, temperature, maxTokens },
   const res = await connect(url, {
     method: "POST",
     signal,
-    headers: { "content-type": "application/json", "x-api-key": t.apiKey, "anthropic-version": "2023-06-01" },
+    headers: { "content-type": "application/json", "x-api-key": t.apiKey, "anthropic-version": "2023-06-01", ...(t.bearer ? { authorization: `Bearer ${t.apiKey}` } : {}) },
     body: JSON.stringify({
       model: t.model,
       max_tokens: maxTokens || 8192,
@@ -279,6 +301,7 @@ export async function* streamChat(body, signal) {
 }
 
 export async function listModels(body) {
+  if (body.provider === "diji-code") return ["auto", ...new Set([...codeModels(), ...providerById("diji-code").models.filter((m) => m !== "auto")])];
   if (body.provider === "diji-free" && env("DIJI_FREE_BASE_URL")) return ["auto", ...(env("DIJI_FREE_MODEL") || "").split(",").map((m) => m.trim()).filter(Boolean)];
   const [t] = resolveTargets({ ...body, model: body.model || "probe" });
   const headers = {};

@@ -31,12 +31,29 @@ async function readJson(request, max = MAX_BODY) {
   }
 }
 
+// shortcut: per-instance memory, so the limit is approximate on serverless; good enough to stop runaway use.
+const codeHits = new Map();
+function overCodeBudget(request) {
+  const max = Number(process.env.DIJI_CODE_PER_IP || 60); // requests per IP per hour
+  const ip = (request.headers.get("x-forwarded-for") || request.headers.get("x-diji-client-ip") || "").split(",")[0].trim() || "?";
+  const hour = Math.floor(Date.now() / 3_600_000);
+  const h = codeHits.get(ip);
+  if (!h || h.hour !== hour) {
+    if (codeHits.size > 5000) codeHits.clear();
+    codeHits.set(ip, { hour, n: 1 });
+    return false;
+  }
+  return ++h.n > max;
+}
+
 export async function chatHandler(request) {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request) });
   if (request.method !== "POST") return json(request, 405, { error: "Use POST." });
   let gen, first, body;
   try {
     body = await readJson(request);
+    // Diji Code costs the operator money: past a fair share per visitor, use the free tier instead.
+    if (body?.provider === "diji-code" && overCodeBudget(request)) body.provider = "diji-free";
     gen = streamChat(body, request.signal);
     // Pull the first piece before answering so setup errors become a clean JSON error, not a broken stream.
     first = await gen.next();

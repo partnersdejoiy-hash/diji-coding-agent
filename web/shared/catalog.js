@@ -4,6 +4,14 @@
 
 export const PROVIDERS = [
   {
+    id: "diji-code",
+    name: "Diji Code",
+    kind: "openai",
+    keyless: true,
+    blurb: "Diji's own coding model, powered by OpenCode Zen on this server. No key needed. \"auto\" picks a strong coding model and falls back if one is busy.",
+    models: ["auto", "kimi-k2.7-code", "deepseek-v4.1-flash", "glm-5.3", "minimax-m3", "claude-sonnet-5-5"],
+  },
+  {
     id: "diji-free",
     name: "Diji Free",
     kind: "openai",
@@ -133,4 +141,4 @@ export const PROVIDERS = [
 
 export const providerById = (id) => PROVIDERS.find((p) => p.id === id);
 
-export const DEFAULT_MODEL = { provider: "diji-free", model: "auto" };
+export const DEFAULT_MODEL = { provider: "diji-code", model: "auto" };
