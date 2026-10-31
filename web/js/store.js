@@ -100,8 +100,8 @@ export function save() {
 export const activeChat = () => state.chats.find((c) => c.id === state.activeId) || null;
 
 export function newChat(extra = {}) {
-  // Leaving an incognito chat forgets it.
-  state.chats = state.chats.filter((c) => !c.incognito);
+  // Leaving an incognito chat forgets it, and unused empty chats do not pile up in the sidebar.
+  state.chats = state.chats.filter((c) => !c.incognito && (c.messages.length || Object.keys(c.files || {}).length));
   const chat = { id: uid(), title: "New chat", messages: [], files: {}, created: Date.now(), updated: Date.now(), ...extra };
   state.chats.unshift(chat);
   state.activeId = chat.id;

@@ -1082,6 +1082,15 @@ const codeHandlers = {
 addEventListener("message", (e) => {
   const frame = previewFrame($("#panel-body"));
   if (!frame || e.source !== frame.contentWindow || !e.data?.diji) return;
+  if (e.data.kind === "storage") {
+    const chat = activeChat();
+    const data = e.data.data && typeof e.data.data === "object" ? e.data.data : {};
+    if (chat && JSON.stringify(data).length < 300_000) {
+      chat.previewStorage = data; // the app in the preview keeps its saved data across reloads
+      save();
+    }
+    return;
+  }
   if (e.data.kind === "error") {
     const msg = String(e.data.message || "Unknown error").slice(0, 400);
     if (ui.problems.some((p) => p.message === msg) || ui.problems.length >= 20) return;

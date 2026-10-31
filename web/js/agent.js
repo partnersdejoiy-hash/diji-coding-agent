@@ -154,7 +154,7 @@ async function stream(chat, system, onText, signal, override) {
       temperature: s.temperature,
       system,
       messages: override?.messages || apiMessages(chat),
-      ...(override?.maxTokens ? { maxTokens: override.maxTokens } : s.effort === "high" ? { maxTokens: 16000 } : s.effort === "low" ? { maxTokens: 4096 } : {}),
+      ...(override?.maxTokens ? { maxTokens: override.maxTokens } : s.effort === "high" ? { maxTokens: 16000 } : s.effort === "low" ? { maxTokens: 4096 } : { maxTokens: 8192 }),
       ...(override ? {} : { effort: s.effort }),
     }),
   });
@@ -172,6 +172,11 @@ async function stream(chat, system, onText, signal, override) {
     onText(text);
   }
   return text;
+}
+
+// A continuation sometimes starts by reopening the fence or repeating the file= line; drop that.
+function stripReopen(t) {
+  return t.replace(/^\s*```[^\n]*\n/, "").replace(/^\s*file=\S+\s*\n/, "");
 }
 
 function summarize(tool, args, result) {
@@ -240,10 +245,32 @@ export async function runAgent(chat, { onUpdate, onFiles, onMemory, signal }) {
       onUpdate(msg);
       throw e;
     }
+    // Long files can hit the model's output limit mid-file: ask it to carry on and stitch the parts.
+    for (let more = 0; more < 3 && !signal.aborted; more++) {
+      const tail = segments(msg.content).at(-1);
+      if (tail?.type !== "file" || tail.done) break;
+      const base = msg.content;
+      try {
+        await stream(chat, system, (t) => {
+          msg.content = base + stripReopen(t);
+          onUpdate(msg);
+        }, signal, {
+          messages: [...apiMessages(chat), { role: "user", content: `Your reply was cut off inside ${tail.path}. Continue exactly from the next character. Do not repeat anything, do not add a preamble and do not open a new code fence. Close the fence when ${tail.path} is complete.` }],
+        });
+      } catch {
+        break;
+      }
+      if (msg.content === base) break;
+    }
     msg.streaming = false;
     msg.tokens = Math.round(msg.content.length / 4);
     let changed = [];
     const changes = fileChanges(segments(msg.content));
+    // A full HTML page in an unnamed block (common with smaller models) becomes index.html.
+    if (!Object.keys(changes).length && (state.settings.mode || "build") === "build") {
+      const page = msg.content.replace(/<think>[\s\S]*?(<\/think>|$)/g, "").match(/```html?[^\n]*\n([\s\S]*?<\/html>)\s*```/i);
+      if (page && /<!doctype html|<html/i.test(page[1])) changes["index.html"] = page[1].trim();
+    }
     const count = Object.keys(changes).length;
     if (count && state.settings.mode && state.settings.mode !== "build") {
       msg.ignored = count; // plan/ask replies never touch files

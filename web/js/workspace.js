@@ -16,6 +16,8 @@ export function fileChanges(segs) {
 
 // Injected into every preview: reports runtime errors and supports click-to-select (Dyad-style).
 const RUNTIME = `<script>(()=>{const send=m=>parent.postMessage(Object.assign({diji:1},m),"*");
+try{localStorage.getItem("diji")}catch{const mk=(init,keep)=>{let d=Object.assign({},init);const sync=()=>keep&&send({kind:"storage",data:d});return{getItem:k=>Object.prototype.hasOwnProperty.call(d,k)?d[k]:null,setItem(k,v){d[k]=String(v);sync()},removeItem(k){delete d[k];sync()},clear(){d={};sync()},key:i=>Object.keys(d)[i]??null,get length(){return Object.keys(d).length}}};
+try{Object.defineProperty(window,"localStorage",{value:mk(window.__dijiStore||{},true),configurable:true});Object.defineProperty(window,"sessionStorage",{value:mk({},false),configurable:true})}catch{}}
 addEventListener("error",e=>{const t=e.target;if(t&&t!==window&&(t.src||t.href)){send({kind:"error",message:"Failed to load "+(t.src||t.href)});return}send({kind:"error",message:String(e.message||e.error),line:e.lineno})},true);
 addEventListener("unhandledrejection",e=>send({kind:"error",message:"Unhandled promise rejection: "+String(e.reason&&e.reason.message||e.reason)}));
 const ce=console.error;console.error=(...a)=>{send({kind:"error",message:a.map(x=>x instanceof Error?x.message:typeof x==="object"?(()=>{try{return JSON.stringify(x)}catch{return String(x)}})():String(x)).join(" ").slice(0,500)});ce.apply(console,a)};
@@ -30,7 +32,8 @@ addEventListener("keydown",e=>{if(picking&&e.key==="Escape"){clear();send({kind:
 const pick = (files, re) => Object.keys(files).find((p) => re.test(p));
 
 // Inlines local CSS/JS so a multi-file web app runs inside one sandboxed iframe.
-export function buildPreview(files) {
+// storage: the preview's saved localStorage (the sandboxed preview cannot use the real one).
+export function buildPreview(files, storage) {
   const htmlPath = files["index.html"] !== undefined ? "index.html" : pick(files, /\.html?$/i);
   if (!htmlPath) {
     const svg = pick(files, /\.svg$/i);
@@ -49,7 +52,8 @@ export function buildPreview(files) {
   };
   const safeEnd = (s, tag) => s.replace(new RegExp(`</${tag}`, "gi"), `<\\/${tag}`);
   let html = files[htmlPath];
-  html = /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (h) => h + RUNTIME) : RUNTIME + html;
+  const boot = (storage ? `<script>window.__dijiStore=${JSON.stringify(storage).replace(/</g, "\\u003c")}<\/script>` : "") + RUNTIME;
+  html = /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (h) => h + boot) : boot + html;
   html = html.replace(/<link\b[^>]*?href=["']([^"']+)["'][^>]*>/gi, (tag, href) => {
     if (!/stylesheet/i.test(tag)) return tag;
     const css = find(href);
@@ -134,7 +138,9 @@ const highlight = (code, lang) => {
   return esc(code);
 };
 
+let previewChat = null;
 export function renderPreview(el, chat, ui, handlers) {
+  previewChat = chat;
   const html = buildPreview(chat.files);
   if (!html) {
     el.innerHTML = `<div class="panel-empty">${icon("eye", 28)}<p><strong>Nothing to preview yet</strong></p><p>Ask Diji for a web page, a component or an SVG and it shows up here live.</p></div>`;
@@ -154,15 +160,16 @@ export function renderPreview(el, chat, ui, handlers) {
     el.querySelector("[data-reload]").onclick = () => {
       const f = el.querySelector("iframe");
       handlers.onReload();
-      f.srcdoc = f.dataset.src;
+      f.srcdoc = buildPreview(previewChat.files, previewChat.previewStorage);
     };
     el.querySelector("[data-problems]").onclick = handlers.onFix;
   }
   const frame = el.querySelector("iframe");
-  if (frame.dataset.src !== html) {
+  // Reload only when the code changed (keyed without the saved storage, which changes as the app runs).
+  if (frame.dataset.key !== chat.id + html) {
     handlers.onReload();
-    frame.dataset.src = html;
-    frame.srcdoc = html;
+    frame.dataset.key = chat.id + html;
+    frame.srcdoc = buildPreview(chat.files, chat.previewStorage);
   }
   const pickBtn = el.querySelector("[data-pick]");
   pickBtn.setAttribute("aria-pressed", String(Boolean(ui.picking)));

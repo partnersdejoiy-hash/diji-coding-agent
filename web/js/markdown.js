@@ -83,13 +83,24 @@ export function segments(text) {
       if (m) {
         const info = m[3] || "";
         const file = (info.match(/(?:file|path|filename)\s*=\s*"?([^"\s]+)"?/) || [])[1];
-        fence = { ticks: m[1], lang: m[2].toLowerCase(), file, body: [], open: line };
+        fence = { ticks: m[1], lang: m[2].toLowerCase(), file, body: [], open: line, first: !file };
         if (!file) buf.push(line);
         else flush();
         continue;
       }
       buf.push(line);
       continue;
+    }
+    // Weaker models often put the file name on the first line inside the fence instead.
+    if (fence.first) {
+      fence.first = false;
+      const named = line.match(/^\s*(?:(?:file|path|filename)\s*[=:]\s*"?([^"\s]+)"?|<!--\s*(?:file|filename)\s*:\s*([^\s>]+)\s*-->|(?:\/\/|#)\s*(?:file|filename)\s*:\s*(\S+))\s*$/i);
+      if (named) {
+        buf.pop();
+        flush();
+        fence.file = named[1] || named[2] || named[3];
+        continue;
+      }
     }
     const closes = line.trim().startsWith(fence.ticks[0].repeat(fence.ticks.length)) && line.trim().replace(/[`~]/g, "") === "";
     if (closes) {
