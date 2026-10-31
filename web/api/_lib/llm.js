@@ -10,6 +10,8 @@ function freeTargets(model) {
   if (base) {
     // DIJI_FREE_MODEL may list several models, tried in order (free routes get rate limited).
     const models = (env("DIJI_FREE_MODEL") || model).split(",").map((m) => m.trim()).filter(Boolean);
+    // A model the person picked from the server's list goes first; "auto" keeps the server's order.
+    if (models.includes(model)) models.unshift(...models.splice(models.indexOf(model), 1));
     return models.map((m) => ({ kind: "openai", baseUrl: base, apiKey: env("DIJI_FREE_API_KEY") || "", model: m }));
   }
   return [
@@ -275,6 +277,7 @@ export async function* streamChat(body, signal) {
 }
 
 export async function listModels(body) {
+  if (body.provider === "diji-free" && env("DIJI_FREE_BASE_URL")) return ["auto", ...(env("DIJI_FREE_MODEL") || "").split(",").map((m) => m.trim()).filter(Boolean)];
   const [t] = resolveTargets({ ...body, model: body.model || "probe" });
   const headers = {};
   let url;

@@ -8,8 +8,8 @@ export const PROVIDERS = [
     name: "Diji Free",
     kind: "openai",
     keyless: true,
-    blurb: "No key needed. Open models through a free public endpoint, so you can try Diji right away.",
-    models: ["openai", "openai-fast", "qwen-coder", "mistral", "llama"],
+    blurb: "No key needed. Free open models picked by this Diji server, so you can try Diji right away. Use Fetch models to pick one yourself.",
+    models: ["auto"],
   },
   {
     id: "openai",
@@ -133,4 +133,4 @@ export const PROVIDERS = [
 
 export const providerById = (id) => PROVIDERS.find((p) => p.id === id);
 
-export const DEFAULT_MODEL = { provider: "diji-free", model: "openai" };
+export const DEFAULT_MODEL = { provider: "diji-free", model: "auto" };
