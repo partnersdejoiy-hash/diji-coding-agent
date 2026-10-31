@@ -1057,3 +1057,6 @@ body.on-page .chat-title { visibility: visible; }
 .mcp-card summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; }
 .mcp-card summary::-webkit-details-marker { display: none; }
 .mcp-out { margin: 10px 0 0; padding: 10px; max-height: 260px; overflow: auto; background: var(--code-bg); border-radius: 10px; font: 12px/1.5 var(--mono); white-space: pre-wrap; word-break: break-word; }
+.chan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 14px 0; }
+.chan { display: flex; flex-direction: column; gap: 4px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.chan .muted { font-size: 12.5px; line-height: 1.45; }

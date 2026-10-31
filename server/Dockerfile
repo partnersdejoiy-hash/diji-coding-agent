@@ -9,5 +9,6 @@ COPY server ./server
 
 ENV NODE_ENV=production PORT=8787
 EXPOSE 8787
+RUN mkdir -p /data && chown pwuser /data
 USER pwuser
 CMD ["node", "server/index.js"]

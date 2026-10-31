@@ -12,6 +12,14 @@ services:
       - DIJI_FREE_API_KEY=${DIJI_FREE_API_KEY:-}
       - DIJI_FREE_MODEL=${DIJI_FREE_MODEL:-}
       - ALLOW_LOCAL_LLM=${ALLOW_LOCAL_LLM:-0}
+      - DIJI_CHANNEL_ALLOW=${DIJI_CHANNEL_ALLOW:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
+      - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET:-}
+      - WHATSAPP_ENABLED=${WHATSAPP_ENABLED:-0}
+      - WHATSAPP_AUTH_DIR=/data/whatsapp
+    volumes:
+      - diji_data:/data
     shm_size: "1gb"
     expose:
       - "8787"
@@ -32,3 +40,4 @@ services:
 
 volumes:
   caddy_data:
+  diji_data:

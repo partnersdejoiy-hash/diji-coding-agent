@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Diji Chat Apps</title>
+  <link rel="icon" href="/favicon.svg">
+  <style>
+    :root { --paper: #f5f1ea; --surface: #fffdf9; --line: #e0d7ca; --ink: #221a1f; --ink-3: #74676e; --pink: #e8178a; --pink-ink: #b80f69; --blue: #2f6bff; --ok: #157a52; --err: #c01f4b; color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) { :root { --paper: #18141a; --surface: #221d24; --line: #3a3239; --ink: #f3ecef; --ink-3: #a99ca3; --pink-ink: #ff6cb5; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 "Schibsted Grotesk", system-ui, sans-serif; }
+    main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { font: 700 32px/1.1 "Bricolage Grotesque", system-ui, sans-serif; letter-spacing: -0.03em; margin: 0 0 6px; }
+    h1 span { color: var(--pink-ink); }
+    p.sub { color: var(--ink-3); margin: 0 0 24px; }
+    form { display: flex; gap: 8px; margin-bottom: 24px; }
+    input { flex: 1; min-width: 0; height: 42px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; }
+    button { height: 42px; padding: 0 16px; border-radius: 12px; border: 0; background: var(--ink); color: var(--paper); font: 600 14px inherit; cursor: pointer; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; box-shadow: 4px 4px 0 rgb(47 107 255 / 0.35); }
+    .card h2 { margin: 0 0 4px; font: 650 17px/1.3 "Bricolage Grotesque", system-ui, sans-serif; }
+    .st { font-size: 13.5px; color: var(--ink-3); }
+    .st.on { color: var(--ok); font-weight: 600; } .st.err { color: var(--err); }
+    .qr { margin-top: 12px; text-align: center; } .qr img { width: 100%; max-width: 260px; border-radius: 12px; background: #fff; padding: 8px; }
+    ol { padding-left: 20px; } li { margin: 4px 0; }
+    code { font: 12.5px "JetBrains Mono", ui-monospace, monospace; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 1px 5px; word-break: break-all; }
+    .log { margin-top: 24px; font-size: 13px; color: var(--ink-3); } .log div { padding: 4px 0; border-bottom: 1px dashed var(--line); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Diji <span>chat apps</span></h1>
+  <p class="sub">Talk to Diji from Telegram, Slack and WhatsApp. This page shows what is connected on this server.</p>
+  <form id="f"><input id="tok" type="password" placeholder="Diji server token" autocomplete="current-password" aria-label="Diji server token"><button>Show status</button></form>
+  <p id="err" class="st err" hidden></p>
+  <section id="out" hidden>
+    <div class="grid">
+      <div class="card"><h2>Telegram</h2><div class="st" id="s-telegram"></div></div>
+      <div class="card"><h2>Slack</h2><div class="st" id="s-slack"></div></div>
+      <div class="card"><h2>WhatsApp</h2><div class="st" id="s-whatsapp"></div><div class="qr" id="qr" hidden><img alt="WhatsApp link QR code"><p class="st">WhatsApp → Settings → Linked devices → Link a device</p></div></div>
+    </div>
+    <div class="log" id="log"></div>
+  </section>
+  <h2>Set up</h2>
+  <ol>
+    <li><b>Telegram:</b> message @BotFather, send <code>/newbot</code>, copy the token into <code>TELEGRAM_BOT_TOKEN</code>.</li>
+    <li><b>Slack:</b> create an app at api.slack.com/apps with scopes <code>app_mentions:read</code>, <code>im:history</code>, <code>chat:write</code>; set Event Subscriptions URL to <code>https://YOUR-SERVER/api/channels/slack</code> with events <code>app_mention</code> and <code>message.im</code>; put the bot token in <code>SLACK_BOT_TOKEN</code> and the signing secret in <code>SLACK_SIGNING_SECRET</code>.</li>
+    <li><b>WhatsApp:</b> set <code>WHATSAPP_ENABLED=1</code>, then scan the QR code here. Diji answers in your "Message yourself" chat and to numbers on the allow list. It is unofficial, so WhatsApp may restrict the number; a spare number is safest.</li>
+    <li>Put the ids or numbers allowed to talk to Diji in <code>DIJI_CHANNEL_ALLOW</code> (comma separated). Unknown Telegram and Slack users are told their id.</li>
+    <li>Add these to <code>server/deploy/.env</code> on the VM, then run <code>sudo docker compose up -d --build</code>.</li>
+  </ol>
+</main>
+<script>
+  const $ = (s) => document.querySelector(s);
+  let timer;
+  try { $("#tok").value = sessionStorage.getItem("diji:tok") || ""; } catch {}
+  async function load() {
+    const r = await fetch("/api/channels/status", { headers: { "x-diji-token": $("#tok").value } });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { $("#err").textContent = j.error || "Could not load status."; $("#err").hidden = false; $("#out").hidden = true; clearInterval(timer); return; }
+    $("#err").hidden = true; $("#out").hidden = false;
+    for (const k of ["telegram", "slack", "whatsapp"]) {
+      const el = $("#s-" + k);
+      el.textContent = j[k];
+      el.className = "st" + (j[k].startsWith("on") ? " on" : j[k].startsWith("error") ? " err" : "");
+    }
+    $("#qr").hidden = !j.whatsappQr;
+    if (j.whatsappQr) $("#qr img").src = j.whatsappQr;
+    $("#log").innerHTML = "";
+    for (const l of j.log) { const d = document.createElement("div"); d.textContent = new Date(l.at).toLocaleTimeString() + " · " + l.text; $("#log").append(d); }
+  }
+  $("#f").onsubmit = (e) => {
+    e.preventDefault();
+    try { sessionStorage.setItem("diji:tok", $("#tok").value); } catch {}
+    clearInterval(timer);
+    load();
+    timer = setInterval(load, 4000);
+  };
+</script>
+</body>
+</html>

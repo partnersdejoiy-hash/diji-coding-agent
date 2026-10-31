@@ -48,6 +48,7 @@ export function openSettings(tab = currentTab, providerId) {
     ["prefs", "Preferences", "settings"],
     ["memory", "Memory", "brain"],
     ["plugins", "Plugins (MCP)", "plug"],
+    ["channels", "Chat apps", "phone"],
     ["data", "Data & privacy", "layers"],
   ];
   modalShell(
@@ -63,7 +64,7 @@ export function openSettings(tab = currentTab, providerId) {
   );
   dialog.querySelectorAll(".snav").forEach((b) => (b.onclick = () => openSettings(b.dataset.tab)));
   const body = $("#settings-body", dialog);
-  ({ models: renderModels, cloud: renderCloud, deploy: renderDeploy, prefs: renderPrefs, memory: renderMemory, plugins: renderPlugins, data: renderData })[tab](body);
+  ({ models: renderModels, cloud: renderCloud, deploy: renderDeploy, prefs: renderPrefs, memory: renderMemory, plugins: renderPlugins, channels: renderChannels, data: renderData })[tab](body);
 }
 
 function renderModels(body) {
@@ -363,6 +364,20 @@ function renderMemory(body) {
     save();
     renderMemory(body);
   };
+}
+
+function renderChannels(body) {
+  const server = (state.settings.serverUrl || window.DIJI_CONFIG?.serverUrl || "https://130-210-33-30.sslip.io").replace(/\/+$/, "");
+  body.innerHTML = `
+    <h3>Chat apps</h3>
+    <p class="muted">Talk to Diji from your phone, like OpenClaw. The always-on Diji server answers on Telegram, Slack and WhatsApp with the free model.</p>
+    <div class="chan-grid">
+      <div class="chan">${icon("send", 18)}<strong>Telegram</strong><span class="muted">Official bot. Make one with @BotFather in a minute.</span></div>
+      <div class="chan">${icon("users", 18)}<strong>Slack</strong><span class="muted">Mention @Diji in a channel or DM it.</span></div>
+      <div class="chan">${icon("phone", 18)}<strong>WhatsApp</strong><span class="muted">Link by QR code. Unofficial, so a spare number is safest.</span></div>
+    </div>
+    <p>Set the tokens on the server, then open the control page to see status and scan the WhatsApp QR code. You will need your Diji server token.</p>
+    <a class="btn-primary" href="${esc(server)}/channels.html" target="_blank" rel="noopener">${icon("external", 16)} Open chat apps control page</a>`;
 }
 
 function renderData(body) {

@@ -6,6 +6,7 @@ import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { chatHandler, modelsHandler, deployHandler, mcpHandler, corsHeaders, json } from "../web/api/_lib/handlers.js";
 import { browserAction, BrowserError, shutdownBrowsers } from "./browser.js";
+import { startChannels, slackEvent, status as channelStatus } from "./channels.js";
 
 const PORT = Number(process.env.PORT || 8787);
 const TOKEN = process.env.DIJI_SERVER_TOKEN || "";
@@ -82,6 +83,11 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "OPTIONS") return await send(res, new Response(null, { status: 204, headers: corsHeaders(request) }));
     if (path === "/api/health") return await send(res, json(request, 200, { ok: true, browser: true, auth: Boolean(TOKEN), name: "diji-server" }));
     if (path === "/api/browser/health") return await send(res, json(request, 200, { ok: true, builtin: false }));
+    // Slack signs its own requests, so this route skips the Diji token.
+    if (path === "/api/channels/slack" && req.method === "POST") {
+      const r = slackEvent(await request.text(), req.headers);
+      return await send(res, json(request, r.status, r.body));
+    }
     if (TOKEN && req.headers["x-diji-token"] !== TOKEN) return await send(res, json(request, 401, { error: "This Diji server needs an access token. Add it in Settings → Cloud." }));
     // Calls relayed by Diji's own proxy carry the visitor's IP, so limits stay per person.
     const who = (TOKEN && req.headers["x-diji-client-ip"]) || ip;
@@ -89,6 +95,7 @@ const server = http.createServer(async (req, res) => {
       if (limited(who + ":chat", 40)) return await send(res, json(request, 429, { error: "Too many messages this minute. Take a breath and try again." }));
       return await send(res, await chatHandler(request));
     }
+    if (path === "/api/channels/status") return await send(res, json(request, 200, channelStatus));
     if (path === "/api/models") return await send(res, await modelsHandler(request));
     if (path === "/api/mcp") {
       if (limited(who + ":mcp", 60)) return await send(res, json(request, 429, { error: "Too many plugin calls this minute." }));
@@ -124,6 +131,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => console.log(`Diji server on http://localhost:${PORT}${TOKEN ? " (token required)" : ""}`));
+startChannels();
 
 for (const sig of ["SIGINT", "SIGTERM"]) {
   process.on(sig, async () => {

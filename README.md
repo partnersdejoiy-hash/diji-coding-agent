@@ -126,6 +126,18 @@ The script installs Docker, opens the VM firewall, and starts Diji behind Caddy 
 | `CORS_ORIGIN` | `*` | Your Vercel URL |
 | `DIJI_MAX_BROWSERS` | `4` | Concurrent browser sessions |
 | `ALLOW_LOCAL_LLM` | `0` | Allow http/private model URLs (self-hosted models on a trusted box) |
+| `DIJI_FREE_BASE_URL`, `DIJI_FREE_API_KEY`, `DIJI_FREE_MODEL` | | Model used by the chat apps (same as on Vercel; `DIJI_FREE_MODEL` can be a comma-separated fallback list) |
+| `DIJI_CHANNEL_ALLOW` | | Telegram user ids, Slack user ids and WhatsApp numbers allowed to talk to Diji |
+| `TELEGRAM_BOT_TOKEN` | | Turns on the Telegram bot (long polling, no webhook needed) |
+| `SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET` | | Turns on Slack; events URL is `https://<server>/api/channels/slack` |
+| `WHATSAPP_ENABLED` | `0` | `1` links WhatsApp Web by QR code (unofficial; a spare number is safest) |
+
+Chat apps status and the WhatsApp QR code live at `https://<server>/channels.html` (needs the server token).
+
+## Agents and plugins
+
+- **Agents** (sidebar → Agents): ready-made specialists (UI Designer, Bug Hunter, Code Reviewer, Interview Coach, …) and your own, with instructions and starter prompts. Export and import them as JSON.
+- **Plugins (MCP)** (Settings → Plugins): connect any remote MCP server over Streamable HTTP. Diji lists its tools to the model and calls them with `<diji-mcp server="…" tool="…">{json}</diji-mcp>` through the `/api/mcp` relay.
 
 ## How the agent works
 
