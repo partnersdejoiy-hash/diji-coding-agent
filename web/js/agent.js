@@ -313,8 +313,17 @@ export async function runAgent(chat, { onUpdate, onFiles, onMemory, signal }) {
     let changed = [];
     const segs = segments(msg.content);
     const changes = fileChanges(segs);
-    // Edits (SEARCH/REPLACE) build on the file as this reply left it.
+    // Guard: a "whole file" that lost most of the existing code is almost always a fragment
+    // (the model sent only the part it changed). Keep the old file and ask again.
     const editFailures = [];
+    const shrinkOk = /\b(shorter|shorten|smaller|remove|delete|strip|simplif|minimal|minif|trim|rewrite|from scratch|replace it)/i.test(prompt);
+    for (const [path, code] of Object.entries(changes)) {
+      const old = chat.files[path];
+      if (code == null || old == null || shrinkOk || old.length < 3000 || code.length > old.length * 0.55) continue;
+      delete changes[path];
+      editFailures.push(`${path} you sent has ${code.split("\n").length} lines but the current file has ${old.split("\n").length}, so it looks like only a part of it. It was not applied. Send the changes as a diji-edit (SEARCH/REPLACE), or send the complete file.`);
+    }
+    // Edits (SEARCH/REPLACE) build on the file as this reply left it.
     for (const e of segs.filter((x) => x.type === "tool" && x.tool === "edit" && !x.open && x.args.path)) {
       const path = e.args.path.replace(/^\.?\//, "");
       const base = path in changes ? changes[path] : chat.files[path];
