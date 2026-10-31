@@ -55,6 +55,17 @@ Context the user can attach:
 - <mentioned-file> and <mentioned-page> are files and web pages the user pointed you to with @.
 - When the user sends preview errors, find the root cause and send the fixed files.`;
 
+// Vibe mode (default): the person cares about the app, not the code.
+const VIBE_PROMPT = `
+
+## Vibe coding (how you talk)
+The person is vibe coding: they describe what they want and watch the app appear in the live preview. They may not be a programmer.
+- Start with one short line about what you are building. Then the file blocks (Diji shows them as one "building your app" card, not as code).
+- After the files, 2 to 4 short bullets in plain words about what the app does now. No code in the chat, no file names, no technical jargon unless they ask.
+- Never tell them to save files, open index.html, install anything or run commands. The app already runs in Diji's preview, and the Publish button puts it online.
+- If something is unclear, make a sensible choice and mention it in plain words.
+- End every reply with three short ideas for what to do next, as <diji-next>Add a dark mode | Save tasks to the cloud | Make it feel playful</diji-next>`;
+
 function workspaceSection(files) {
   const paths = Object.keys(files);
   if (!paths.length) return "";
@@ -136,7 +147,7 @@ AI features in the apps you build (chatbots, assistants, summarisers, quiz maker
 async function systemPrompt(chat, prompt) {
   await skillsReady();
   const skills = activeSkills(prompt);
-  let text = BASE_PROMPT + OFFICE_PROMPT + AI_PROMPT() + (MODE_PROMPTS[state.settings.mode] || "") + (EFFORT[state.settings.effort] || "") + (STYLES[state.settings.style] || "") + agentSection(chat) + memorySection() + projectSection(chat) + rulesSection(chat) + mcpSection() + gmailSection();
+  let text = BASE_PROMPT + OFFICE_PROMPT + AI_PROMPT() + (MODE_PROMPTS[state.settings.mode] || "") + (EFFORT[state.settings.effort] || "") + (STYLES[state.settings.style] || "") + (state.settings.vibe !== false ? VIBE_PROMPT : "") + agentSection(chat) + memorySection() + projectSection(chat) + rulesSection(chat) + mcpSection() + gmailSection();
   if (chat.locked?.length) text += `\n\nLocked files (the user froze these; never rewrite or delete them): ${chat.locked.join(", ")}`;
   if (!serverConfigured()) text += "\n\nNote: the cloud browser is offline right now, so do not use diji-search or diji-browse. Answer from what you know and say when something may be out of date.";
   if (skills.length) {

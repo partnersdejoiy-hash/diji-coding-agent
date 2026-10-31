@@ -4,26 +4,47 @@ import { providerById } from "../../shared/catalog.js";
 
 const env = (k) => (typeof process !== "undefined" ? process.env[k] : undefined);
 
-// Free tier: an operator-configured endpoint wins, otherwise public keyless endpoints in order.
-function freeTargets(model) {
-  const base = env("DIJI_FREE_BASE_URL");
-  if (base) {
-    // DIJI_FREE_MODEL may list several models, tried in order (free routes get rate limited).
-    const models = (env("DIJI_FREE_MODEL") || model).split(",").map((m) => m.trim()).filter(Boolean);
-    // A model the person picked from the server's list goes first; "auto" keeps the server's order.
-    if (models.includes(model)) models.unshift(...models.splice(models.indexOf(model), 1));
-    return models.map((m) => ({ kind: "openai", baseUrl: base, apiKey: env("DIJI_FREE_API_KEY") || "", model: m }));
+// Free tier: every free provider the operator has a key for, chained, so when one is rate limited
+// the next answers. Each model id is "provider:model" so people can pick one from the menu.
+const FREE_PROVIDERS = [
+  { id: "nvidia", key: "NVIDIA_API_KEY", base: "https://integrate.api.nvidia.com/v1", models: "moonshotai/kimi-k2.6,deepseek-ai/deepseek-v4.1-flash,z-ai/glm-5.3-flash" },
+  { id: "gemini", key: "GEMINI_API_KEY", base: "https://generativelanguage.googleapis.com/v1beta/openai", models: "gemini-3.8-flash,gemini-3.5-flash" },
+  { id: "groq", key: "GROQ_API_KEY", base: "https://api.groq.com/openai/v1", models: "openai/gpt-oss-120b" },
+  { id: "mistral", key: "MISTRAL_API_KEY", base: "https://api.mistral.ai/v1", models: "codestral-latest" },
+  { id: "openrouter", key: "DIJI_FREE_API_KEY", base: "DIJI_FREE_BASE_URL", models: "DIJI_FREE_MODEL" },
+];
+const list = (s) => String(s || "").split(",").map((m) => m.trim()).filter(Boolean);
+function freeList() {
+  const out = [];
+  for (const p of FREE_PROVIDERS) {
+    const key = env(p.key);
+    const base = p.id === "openrouter" ? env("DIJI_FREE_BASE_URL") : p.base;
+    if (!base || (!key && p.id !== "openrouter")) continue;
+    const models = p.id === "openrouter" ? list(env("DIJI_FREE_MODEL") || "openrouter/free") : list(env(`${p.id.toUpperCase()}_MODELS`) || p.models);
+    for (const m of models) out.push({ kind: "openai", baseUrl: base, apiKey: key || "", model: m, label: `${p.id}:${m}` });
   }
-  return [
-    { kind: "openai", baseUrl: "https://text.pollinations.ai/openai", chatPath: "", apiKey: "", model },
-    { kind: "openai", baseUrl: "https://gen.pollinations.ai/v1", apiKey: env("POLLINATIONS_KEY") || "", model },
-  ];
+  return out;
+}
+export const freeModelIds = () => freeList().map((t) => t.label);
+function freeTargets(model) {
+  const all = freeList();
+  if (!all.length) {
+    return [
+      { kind: "openai", baseUrl: "https://text.pollinations.ai/openai", chatPath: "", apiKey: "", model },
+      { kind: "openai", baseUrl: "https://gen.pollinations.ai/v1", apiKey: env("POLLINATIONS_KEY") || "", model },
+    ];
+  }
+  // A model the person picked from the menu goes first; "auto" keeps the server's order.
+  const i = all.findIndex((t) => t.label === model || t.model === model);
+  if (i > 0) all.unshift(...all.splice(i, 1));
+  return all;
 }
 
 // Diji Code: Diji's own model tier on OpenCode Zen with the server's key (DIJI_CODE_API_KEY).
 // Claude models on Zen speak the Anthropic Messages API; the rest are OpenAI-compatible.
 // Without a key it quietly uses the free tier, so the app always answers.
 const CODE_DEFAULT = "kimi-k2.7-code,deepseek-v4.1-flash,glm-5.3";
+const ZEN_SUGGESTED = ["kimi-k2.7-code", "deepseek-v4.1-flash", "glm-5.3", "minimax-m3", "claude-sonnet-5-5"];
 const codeModels = () => (env("DIJI_CODE_MODEL") || CODE_DEFAULT).split(",").map((m) => m.trim()).filter(Boolean);
 function codeTargets(model) {
   const key = env("DIJI_CODE_API_KEY");
@@ -31,14 +52,14 @@ function codeTargets(model) {
   const base = env("DIJI_CODE_BASE_URL") || "https://opencode.ai/zen/v1";
   const models = codeModels();
   // Only models the operator allows (their list plus Diji's suggestions), so nobody picks an expensive one.
-  if (model && model !== "auto" && (models.includes(model) || providerById("diji-code").models.includes(model))) {
+  if (model && model !== "auto" && (models.includes(model) || ZEN_SUGGESTED.includes(model))) {
     const i = models.indexOf(model);
     if (i !== -1) models.splice(i, 1);
     models.unshift(model);
   }
   const zen = models.map((m) => ({ kind: /^claude-/.test(m) ? "anthropic" : "openai", baseUrl: base, apiKey: key, model: m, bearer: true }));
   // If every Zen model is busy, the free tier still answers.
-  return env("DIJI_FREE_BASE_URL") ? [...zen, ...freeTargets("auto")] : zen;
+  return [...zen, ...freeList()];
 }
 
 export class HttpError extends Error {
@@ -287,7 +308,7 @@ export async function* streamChat(body, signal) {
     try {
       for await (const piece of gen) {
         started = true;
-        body.usedModel = t.model; // which model answered (free tier falls back between several)
+        body.usedModel = t.label || t.model; // which model answered (free tier falls back between several)
         yield piece;
       }
       if (started) return;
@@ -301,8 +322,8 @@ export async function* streamChat(body, signal) {
 }
 
 export async function listModels(body) {
-  if (body.provider === "diji-code") return ["auto", ...new Set([...codeModels(), ...providerById("diji-code").models.filter((m) => m !== "auto")])];
-  if (body.provider === "diji-free" && env("DIJI_FREE_BASE_URL")) return ["auto", ...(env("DIJI_FREE_MODEL") || "").split(",").map((m) => m.trim()).filter(Boolean)];
+  if (body.provider === "diji-code") return ["auto", ...new Set([...(env("DIJI_CODE_API_KEY") ? [...codeModels(), ...ZEN_SUGGESTED] : []), ...freeModelIds()])];
+  if (body.provider === "diji-free" && freeModelIds().length) return ["auto", ...freeModelIds()];
   const [t] = resolveTargets({ ...body, model: body.model || "probe" });
   const headers = {};
   let url;

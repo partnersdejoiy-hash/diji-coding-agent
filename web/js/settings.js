@@ -282,6 +282,7 @@ function renderPrefs(body) {
     <label class="field"><span>Project rules</span>
       <textarea id="prules" rows="5" placeholder="Rules Diji always follows, e.g.&#10;- Use TypeScript and Tailwind&#10;- Mobile first, no external UI libraries&#10;- Comments in English">${esc(s.rules || "")}</textarea>
       <small class="muted">Also picked up from a .dijirules, AGENTS.md, .clinerules or .cursorrules file in the workspace.</small></label>
+    <label class="switch"><input type="checkbox" id="pvibe"${s.vibe !== false ? " checked" : ""}><span class="track"></span><span>Vibe mode: show the app, keep code out of the chat (turn off for developer view)</span></label>
     <label class="switch"><input type="checkbox" id="pautofix"${s.autoFix !== false ? " checked" : ""}><span class="track"></span><span>Fix preview errors automatically after a build</span></label>
     <label class="switch"><input type="checkbox" id="pnotify"${s.systemNotify ? " checked" : ""}><span class="track"></span><span>Notify me when Diji finishes while I am in another tab</span></label>
     <label class="field"><span>Creativity <output id="ptempv">${s.temperature}</output></span>
@@ -307,6 +308,11 @@ function renderPrefs(body) {
     if (e.target.checked && !(await askNotifyPermission())) e.target.checked = false;
     s.systemNotify = e.target.checked;
     save();
+  };
+  $("#pvibe", body).onchange = (e) => {
+    s.vibe = e.target.checked;
+    save();
+    onChange();
   };
   $("#pautofix", body).onchange = (e) => {
     s.autoFix = e.target.checked;

@@ -103,6 +103,7 @@ Click **Deploy the app on Vercel** above, or import the repo in Vercel and set *
 | Variable | What it does |
 |---|---|
 | `DIJI_CODE_API_KEY` | Turns on **Diji Code**, Diji's own model tier on [OpenCode Zen](https://opencode.ai/zen) (key from the OpenCode console). Optional: `DIJI_CODE_MODEL` (comma-separated fallback list, default `kimi-k2.7-code,deepseek-v4.1-flash,glm-5.3`), `DIJI_CODE_BASE_URL`, `DIJI_CODE_PER_IP` (requests per visitor per hour before falling back to Diji Free, default 60). Without a key, Diji Code uses the free tier. |
+| `NVIDIA_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `MISTRAL_API_KEY` | Free model providers (no card needed) chained into Diji's free tier: NVIDIA NIM (Kimi K2.6, DeepSeek V4.1 Flash, GLM 5.3 Flash), Google Gemini, Groq (GPT-OSS 120B), Mistral (Codestral). Override the models with `NVIDIA_MODELS`, `GEMINI_MODELS`, `GROQ_MODELS`, `MISTRAL_MODELS`. |
 | `DIJI_FREE_BASE_URL`, `DIJI_FREE_API_KEY`, `DIJI_FREE_MODEL` | Point "Diji Free" at your own endpoint (e.g. an OpenRouter key with free models, or your Dejoiy AI Gateway). Defaults to a public keyless endpoint. |
 | `CORS_ORIGIN` | Restrict which sites may call the API (default `*`). |
 | `DIJI_BROWSER_URL`, `DIJI_SERVER_TOKEN` | Turn on the built-in cloud browser for every visitor: your Diji server's https URL and its token (kept server-side). |

@@ -9,7 +9,7 @@ export const PROVIDERS = [
     kind: "openai",
     keyless: true,
     blurb: "Diji's own coding model, powered by OpenCode Zen on this server. No key needed. \"auto\" picks a strong coding model and falls back if one is busy.",
-    models: ["auto", "kimi-k2.7-code", "deepseek-v4.1-flash", "glm-5.3", "minimax-m3", "claude-sonnet-5-5"],
+    models: ["auto"], // the server says which models it really has (free providers and OpenCode Zen)
   },
   {
     id: "diji-free",

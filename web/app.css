@@ -1076,3 +1076,22 @@ body.on-page .chat-title { visibility: visible; }
 .cb-note { flex: 1 1 160px; min-width: 0; height: 30px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; }
 .cb-view.locked .cb-shot { cursor: default; }
 .cb-bar input:disabled, .cb-bar button:disabled { opacity: 0.55; }
+
+/* vibe mode */
+.build-card { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 6px 0 14px; padding: 14px 14px 14px 16px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); box-shadow: 4px 4px 0 var(--plate); }
+.build-card.writing { box-shadow: 4px 4px 0 color-mix(in srgb, var(--pink) 45%, transparent); }
+.build-ic { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--pink-tint); color: var(--pink-ink); flex: none; }
+.build-meta { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 140px; }
+.build-meta strong { font: 650 15.5px/1.3 var(--display); letter-spacing: -0.01em; }
+.build-meta span { font-size: 12.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.build-card.writing .build-meta strong { background: linear-gradient(90deg, var(--ink) 30%, var(--pink) 50%, var(--ink) 70%) 0 0 / 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 1.6s linear infinite; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+.code-fold { margin: 8px 0; }
+.code-fold summary { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-3); list-style: none; padding: 4px 10px; border-radius: 8px; background: var(--surface-2); }
+.code-fold summary::-webkit-details-marker { display: none; }
+.code-fold[open] summary { margin-bottom: 8px; }
+.next-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.next-chip { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); font-size: 13px; text-align: left; transition: transform 0.15s var(--ease), box-shadow 0.15s; }
+.next-chip:hover { transform: translate(-1px, -1px); box-shadow: 2px 2px 0 var(--plate); }
+.next-chip svg { color: var(--pink); flex: none; }
+@media (prefers-reduced-motion: reduce) { .build-card.writing .build-meta strong { animation: none; color: var(--ink); background: none; } }

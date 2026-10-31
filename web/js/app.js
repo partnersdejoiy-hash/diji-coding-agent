@@ -1,5 +1,5 @@
 // Diji app shell: sidebar, thread, composer, workspace panel, popovers. Plain DOM, no framework.
-import { state, save, activeChat, newChat, deleteChat, uid, projectOf } from "./store.js";
+import { state, save, activeChat, newChat, deleteChat, uid, projectOf, providerSettings } from "./store.js";
 import { renderProjects, renderProject, renderArtifacts, createProject } from "./pages.js";
 import { renderAgents, agentOf } from "./agents.js";
 import { Speech, canSpeak, speak, stopSpeaking, listenOnce, speakable } from "./voice.js";
@@ -7,7 +7,7 @@ import { PROVIDERS, providerById } from "../shared/catalog.js";
 import { icon } from "./icons.js";
 import { diji, setMood } from "./mascot.js";
 import { esc, renderMarkdown, segments } from "./markdown.js";
-import { runAgent, enhancePrompt } from "./agent.js";
+import { runAgent, enhancePrompt, fetchModels } from "./agent.js";
 import { isOffice } from "./office.js";
 import { downloadOffice, renderPreview, renderCode, renderHistory, buildPreview, previewFrame, zip, downloadBlob, openInStackBlitz, importFromGitHub } from "./workspace.js";
 import { commitChanges, restoreVersion } from "./versions.js";
@@ -360,6 +360,26 @@ function fileCard(s, chat, m) {
     <span class="file-go">${s.done ? icon("chevronRight", 16) : '<span class="spinner"></span>'}</span></button>`;
 }
 
+function foldCode(html) {
+  return html.replace(/<div class="codeblock">([\s\S]*?<\/pre><\/div>)/g, `<details class="code-fold"><summary>${icon("code", 13)} Show code</summary><div class="codeblock">$1</details>`);
+}
+
+function buildCard(list, chat, m) {
+  const writing = list.some((s) => (s.type === "file" && !s.done) || s.open);
+  const paths = [...new Set(list.map((s) => s.path || s.args?.path).filter(Boolean))];
+  const add = (m.changes || []).reduce((n, c) => n + c.added, 0);
+  const del = (m.changes || []).reduce((n, c) => n + c.removed, 0);
+  const lines = list.reduce((n, s) => n + (s.code ? s.code.split("\n").length : 0), 0);
+  const fresh = !chat?.versions || chat.versions.filter((v) => v.msgId).length <= 1;
+  const title = writing ? (fresh ? "Building your app…" : "Updating your app…") : m.pending ? "Changes ready for your review" : m.ignored ? "Plan only, nothing changed" : fresh ? "Your app is ready" : "App updated";
+  const sub = writing ? `${lines} lines written` : `${paths.length} file${paths.length === 1 ? "" : "s"}${add || del ? ` · +${add} −${del}` : ""}`;
+  return `<div class="build-card${writing ? " writing" : ""}">
+    <span class="build-ic">${writing ? '<span class="spinner"></span>' : icon("sparkles", 18)}</span>
+    <span class="build-meta"><strong>${title}</strong><span>${sub}</span></span>
+    ${writing ? "" : `<button type="button" class="btn-primary sm" data-open-app>${icon("eye", 14)} Open app</button><button type="button" class="btn-ghost sm" data-file="${esc(paths[0] || "")}">${icon("code", 14)} Code</button>`}
+  </div>`;
+}
+
 function fillAssistant(node, m) {
   const chat = activeChat();
   const content = node.querySelector(".content");
@@ -369,8 +389,19 @@ function fillAssistant(node, m) {
     content.innerHTML = `<div class="thinking"><span>Diji is thinking…</span></div>`;
   } else {
     let html = "";
-    for (const s of segments(m.content)) {
-      if (s.type === "text") html += `<div class="md">${renderMarkdown(s.text)}</div>`;
+    const vibe = state.settings.vibe !== false;
+    const body = m.content.replace(/<diji-next>[\s\S]*?(<\/diji-next>|$)/g, "");
+    const segs = segments(body);
+    // Vibe mode: every file the reply writes or edits sits behind one build card, not a pile of code.
+    const builds = vibe ? segs.filter((s) => (s.type === "file" && !isOffice(s.path)) || (s.type === "tool" && s.tool === "edit")) : [];
+    let buildShown = false;
+    for (const s of segs) {
+      if (builds.includes(s)) {
+        if (!buildShown) html += buildCard(builds, chat, m);
+        buildShown = true;
+        continue;
+      }
+      if (s.type === "text") html += `<div class="md">${vibe ? foldCode(renderMarkdown(s.text)) : renderMarkdown(s.text)}</div>`;
       else if (s.type === "file") html += fileCard(s, chat, m) + (isOffice(s.path) && s.done && !m.streaming ? `<button type="button" class="office-dl" data-office-dl="${esc(s.path)}">${icon({ docx: "doc", pptx: "slides", xlsx: "sheet" }[s.path.split(".").pop().toLowerCase()], 15)} Download ${esc(s.path.split("/").pop())}</button>` : "");
       else if (s.type === "error") html += `<div class="callout err">${icon("alert", 16)}<span>${esc(s.text)}</span></div>`;
       else if (s.type === "tool" && s.tool === "edit") {
@@ -387,7 +418,12 @@ function fillAssistant(node, m) {
       else if (s.type === "thinking") html += `<details class="think"${s.done ? "" : " open"}><summary>${icon("sparkles", 14)} ${s.done ? "Thought process" : "Thinking…"}</summary><div class="think-body">${esc(s.text)}</div></details>`;
     }
     if (m.streaming) html += `<span class="caret" aria-hidden="true"></span>`;
+    // Next steps (Lovable-style): ideas the person can tap instead of typing.
+    const next = !m.streaming && chat && lastAssistantId(chat) === m.id && (m.content.match(/<diji-next>([\s\S]*?)<\/diji-next>/) || [])[1];
+    if (next) html += `<div class="next-chips">${next.split("|").map((x) => x.trim()).filter(Boolean).slice(0, 4).map((x) => `<button type="button" class="next-chip" data-next="${esc(x)}">${icon("sparkles", 13)} ${esc(x)}</button>`).join("")}</div>`;
     content.innerHTML = html;
+    // Only the newest reply offers next steps.
+    if (chat && lastAssistantId(chat) === m.id) document.querySelectorAll(".next-chips").forEach((x) => x.closest(".msg") !== node && x.remove());
   }
   if (!m.streaming && m.pending && Object.keys(m.pending).length) {
     const n = Object.keys(m.pending).length;
@@ -485,6 +521,15 @@ $("#thread").addEventListener("click", async (e) => {
   const chat = activeChat();
   const msgNode = e.target.closest(".msg");
   const msg = chat?.messages.find((m) => m.id === msgNode?.dataset.id);
+  if (e.target.closest("[data-open-app]")) {
+    openPanel(buildPreview(chat?.files || {}) ? "preview" : "code");
+    return;
+  }
+  const nextChip = e.target.closest("[data-next]");
+  if (nextChip && !ui.busy) {
+    send(nextChip.dataset.next);
+    return;
+  }
   const officeBtn = e.target.closest("[data-office-dl]");
   if (officeBtn && chat) {
     const p = officeBtn.dataset.officeDl;
@@ -618,7 +663,7 @@ function renderTitle() {
 
 /* ---------- composer ---------- */
 const input = $("#composer-input");
-const defaultPlaceholder = () => (mq.mobile.matches ? "Ask Diji to build anything…" : "Ask Diji to build, fix or explain anything…  (@ to mention a file)");
+const defaultPlaceholder = () => (mq.mobile.matches ? "Describe the app you want…" : "Describe your app or what to change…");
 input.placeholder = defaultPlaceholder();
 function autosize() {
   input.style.height = "auto";
@@ -845,7 +890,7 @@ async function run(chat) {
     });
     if (!r.stopped) {
       const secs = Math.round((Date.now() - started) / 1000);
-      const summary = wroteFiles.length ? `Wrote ${wroteFiles.length} file${wroteFiles.length > 1 ? "s" : ""}: ${wroteFiles.slice(0, 3).join(", ")}${wroteFiles.length > 3 ? "…" : ""}` : "Reply ready.";
+      const summary = !wroteFiles.length ? "Reply ready." : state.settings.vibe !== false ? "Your app is updated. Open it to try it." : `Wrote ${wroteFiles.length} file${wroteFiles.length > 1 ? "s" : ""}: ${wroteFiles.slice(0, 3).join(", ")}${wroteFiles.length > 3 ? "…" : ""}`;
       const openAction = wroteFiles.length && !ui.panelOpen ? { label: "Open", run: () => openPanel(buildPreview(chat.files) ? "preview" : "code") } : undefined;
       if (wroteFiles.length || secs > 12) toast(summary, "agent", { title: `Diji finished “${chat.title.slice(0, 40).trim()}”`, action: openAction });
       systemNotify("Diji finished", summary);
@@ -1670,6 +1715,11 @@ async function boot() {
   applyTheme();
   setSidebar(mq.wide.matches && state.settings.sidebarOpen !== false);
   await Promise.all([loadSkills(), checkCloud()]);
+  // Diji's own models depend on which free and paid keys this server has: ask it once.
+  fetchModels("diji-code").then((models) => {
+    providerSettings("diji-code").models = models;
+    save();
+  }, () => {});
   if (!activeChat() && state.chats.length) state.activeId = state.chats[0].id;
   renderAll();
   renderBell();
