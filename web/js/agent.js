@@ -282,6 +282,12 @@ export async function runAgent(chat, { onUpdate, onFiles, onMemory, signal }) {
       }
       if (msg.content === base) break;
     }
+    // Still open after that: close the fence so the work is kept (the preview shows if anything is missing).
+    const open = segments(msg.content).at(-1);
+    if (open?.type === "file" && !open.done) {
+      msg.content += "\n```";
+      msg.cutOff = open.path;
+    }
     msg.streaming = false;
     if (stream.lastModel) msg.model = stream.lastModel;
     msg.tokens = Math.round(msg.content.length / 4);

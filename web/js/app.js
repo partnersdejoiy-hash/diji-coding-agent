@@ -384,6 +384,9 @@ function fillAssistant(node, m) {
   if (!m.streaming && m.mode === "plan" && !m.error && chat && lastAssistantId(chat) === m.id && !ui.busy) {
     content.insertAdjacentHTML("beforeend", `<div class="review plan">${icon("map", 16)}<span>Happy with the plan?</span><button class="btn-primary sm" data-build-plan>${icon("hammer", 14)} Build it</button></div>`);
   }
+  if (!m.streaming && m.cutOff && chat && lastAssistantId(chat) === m.id && !ui.busy) {
+    content.insertAdjacentHTML("beforeend", `<div class="review plan">${icon("alert", 16)}<span>The model stopped before finishing <strong>${esc(m.cutOff)}</strong>.</span><button class="btn-primary sm" data-finish="${esc(m.cutOff)}">${icon("hammer", 14)} Finish it</button></div>`);
+  }
   if (m.error) content.insertAdjacentHTML("beforeend", `<div class="callout err">${icon("alert", 16)}<span>${esc(m.error)}</span><button class="btn-ghost sm" data-fix-settings>Open settings</button></div>`);
   const isLast = chat && lastAssistantId(chat) === m.id;
   foot.innerHTML = m.streaming
@@ -512,6 +515,11 @@ $("#thread").addEventListener("click", async (e) => {
     save();
     scheduleUpdate(msg);
     toast("Rejected. Your files are unchanged.", "info", { keep: false });
+    return;
+  }
+  const finish = e.target.closest("[data-finish]");
+  if (finish && !ui.busy) {
+    send(`${finish.dataset.finish} was cut off before the end. Send the complete ${finish.dataset.finish} again, finished, in one file block. Keep it compact so it fits.`);
     return;
   }
   if (e.target.closest("[data-build-plan]") && !ui.busy) {
