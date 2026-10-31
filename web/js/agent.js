@@ -127,8 +127,9 @@ const AI_PROMPT = () => `
 
 AI features in the apps you build (chatbots, assistants, summarisers, quiz makers, bots):
 - Load <script src="${location.origin}/diji-ai.js"></script> and call:
-  const reply = await DijiAI.chat({ system: "persona and rules", messages: [{ role: "user", content: text }], onToken: (soFar) => render(soFar) });
+  const reply = await DijiAI.chat({ system: "persona and rules", messages: [{ role: "user", content: text }], onToken: (piece, soFar) => (bubble.innerHTML = DijiAI.markdown(soFar)) });
   or the one-shot: const text = await DijiAI.ask("Summarise: ...");
+- onToken gets (piece, soFar): piece is only the new text, soFar is the whole reply so far. DijiAI.markdown(text) turns a reply into safe HTML, so you do not need another Markdown library.
 - It is free, needs no API key and streams. Keep the conversation in an array and send the last messages each turn. Show a typing state and handle errors with a friendly retry.
 - Never ask the user for an OpenAI or other API key for this, and never put keys in front-end code.`;
 
