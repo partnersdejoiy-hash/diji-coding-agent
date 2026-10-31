@@ -37,6 +37,8 @@ function load() {
       base.chats = Array.isArray(saved.chats) ? saved.chats : [];
       base.activeId = saved.activeId || null;
       base.settings = { ...base.settings, ...saved.settings };
+      // A deployment default fills in an empty saved server URL (people who never set one).
+      if (!base.settings.serverUrl && window.DIJI_CONFIG?.serverUrl) base.settings.serverUrl = window.DIJI_CONFIG.serverUrl;
       base.notifications = Array.isArray(saved.notifications) ? saved.notifications.slice(0, 50) : [];
     }
     if (!base.settings.rememberKeys) {
