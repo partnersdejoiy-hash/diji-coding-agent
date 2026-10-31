@@ -1,5 +1,7 @@
 // Diji app shell: sidebar, thread, composer, workspace panel, popovers. Plain DOM, no framework.
-import { state, save, activeChat, newChat, deleteChat, uid } from "./store.js";
+import { state, save, activeChat, newChat, deleteChat, uid, projectOf } from "./store.js";
+import { renderProjects, renderProject, renderArtifacts, createProject } from "./pages.js";
+import { Speech, canSpeak, speak, stopSpeaking, listenOnce, speakable } from "./voice.js";
 import { PROVIDERS, providerById } from "../shared/catalog.js";
 import { icon } from "./icons.js";
 import { diji, setMood } from "./mascot.js";
@@ -38,6 +40,8 @@ const ui = {
   msgEls: new Map(),
   pending: new Map(),
   stick: true,
+  view: "chat", // chat | projects | project:<id> | artifacts
+  pendingProject: null, // project chosen for the next new chat
 };
 
 /* ---------- static icons ---------- */
@@ -63,6 +67,12 @@ function paintIcons() {
   $("#panel-close").innerHTML = icon("x");
   $("#jump").innerHTML = icon("arrowDown", 18);
   $("#drop-ic").innerHTML = icon("upload", 28);
+  $("#projects-ic").innerHTML = icon("folder", 17);
+  $("#artifacts-ic").innerHTML = icon("layers", 17);
+  $("#chat-menu-btn").innerHTML = icon("chevronDown", 16);
+  $("#incognito-btn").innerHTML = icon("ghost", 18);
+  $("#voice-btn").innerHTML = icon("audio", 17);
+  if (!Speech || !canSpeak) $("#voice-btn").hidden = true;
 }
 
 /* ---------- theme ---------- */
@@ -87,10 +97,60 @@ function groupLabel(ts) {
   return d < 1 && new Date(ts).getDate() === new Date().getDate() ? "Today" : d < 7 ? "Previous 7 days" : d < 30 ? "Previous 30 days" : "Older";
 }
 
+function openChat(id, withPanel) {
+  if (ui.busy && id !== state.activeId) ui.abort?.abort();
+  if (id !== state.activeId) state.chats = state.chats.filter((c) => !c.incognito); // leaving incognito forgets it
+  state.activeId = id;
+  save();
+  setView("chat");
+  if (withPanel) openPanel("preview");
+  if (!mq.wide.matches) setSidebar(false);
+}
+
+function setView(view) {
+  ui.view = view;
+  const page = $("#page");
+  const isChat = view === "chat";
+  page.hidden = isChat;
+  $("#thread").hidden = !isChat;
+  $("#composer").hidden = !isChat;
+  if (!isChat) $("#jump").hidden = true;
+  document.body.classList.toggle("on-page", !isChat);
+  document.querySelectorAll(".side-nav [data-view]").forEach((b) => b.setAttribute("aria-current", String(view.startsWith(b.dataset.view))));
+  if (!isChat) {
+    if (ui.panelOpen) closePanel();
+    const h = {
+      openProject: (id) => setView("project:" + id),
+      back: () => setView("projects"),
+      newChatIn: (pid) => {
+        newChat({ projectId: pid });
+        setView("chat");
+        input.focus();
+      },
+      openChat,
+    };
+    if (view === "projects") renderProjects(page, h);
+    else if (view.startsWith("project:")) renderProject(page, view.slice(8), h);
+    else if (view === "artifacts") renderArtifacts(page, h);
+    const p = view.startsWith("project:") ? state.projects.find((x) => x.id === view.slice(8)) : null;
+    $("#chat-title").textContent = p ? p.name : view === "artifacts" ? "Artifacts" : "Projects";
+    $("#chat-menu-btn").hidden = true;
+    page.scrollTop = 0;
+  } else renderAll();
+  renderChatList();
+}
+document.querySelectorAll(".side-nav [data-view]").forEach((b) => (b.onclick = () => {
+  setView(b.dataset.view);
+  if (!mq.wide.matches) setSidebar(false);
+}));
+
 function renderChatList() {
   const q = $("#chat-search").value.trim().toLowerCase();
   const list = $("#chat-list");
-  const chats = state.chats.filter((c) => !q || c.title.toLowerCase().includes(q) || c.messages.some((m) => m.role === "user" && m.content.toLowerCase().includes(q)));
+  const chats = state.chats
+    .filter((c) => !c.incognito)
+    .filter((c) => !q || c.title.toLowerCase().includes(q) || c.messages.some((m) => m.role === "user" && m.content.toLowerCase().includes(q)))
+    .sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0));
   if (!chats.length) {
     list.innerHTML = `<p class="side-empty">${q ? "No chats match." : "Your chats will live here."}</p>`;
     return;
@@ -98,11 +158,12 @@ function renderChatList() {
   let html = "";
   let last = "";
   for (const c of chats) {
-    const g = groupLabel(c.updated);
+    const g = c.starred ? "Starred" : groupLabel(c.updated);
     if (g !== last) html += `<h2 class="side-group">${g}</h2>`;
     last = g;
     html += `<div class="chat-item${c.id === state.activeId ? " on" : ""}" data-id="${c.id}">
-      <button class="chat-link" data-open="${c.id}" ${c.id === state.activeId ? 'aria-current="page"' : ""}>${esc(c.title)}</button>
+      <button class="chat-link" data-open="${c.id}" ${c.id === state.activeId && ui.view === "chat" ? 'aria-current="page"' : ""}>${c.projectId ? `<span class="chat-proj" title="${esc(projectOf(c)?.name || "")}">${icon("folder", 12)}</span>` : ""}${esc(c.title)}</button>
+      <button class="icon-btn tiny${c.starred ? " starred" : ""}" data-star="${c.id}" aria-label="${c.starred ? "Unstar" : "Star"} chat" aria-pressed="${Boolean(c.starred)}">${icon("star", 14)}</button>
       <button class="icon-btn tiny" data-rename="${c.id}" aria-label="Rename chat">${icon("pencil", 14)}</button>
       <button class="icon-btn tiny" data-delete="${c.id}" aria-label="Delete chat">${icon("trash", 14)}</button></div>`;
   }
@@ -113,12 +174,13 @@ $("#chat-list").addEventListener("click", (e) => {
   const open = e.target.closest("[data-open]")?.dataset.open;
   const ren = e.target.closest("[data-rename]")?.dataset.rename;
   const del = e.target.closest("[data-delete]")?.dataset.delete;
-  if (open) {
-    if (ui.busy) ui.abort?.abort();
-    state.activeId = open;
+  const star = e.target.closest("[data-star]")?.dataset.star;
+  if (open) openChat(open);
+  if (star) {
+    const c = state.chats.find((x) => x.id === star);
+    c.starred = !c.starred;
     save();
-    renderAll();
-    if (!mq.wide.matches) setSidebar(false);
+    renderChatList();
   }
   if (ren) {
     const c = state.chats.find((x) => x.id === ren);
@@ -171,7 +233,11 @@ const TEMPLATES = [
 
 function greeting() {
   const h = new Date().getHours();
-  return h < 5 ? "Burning the midnight oil?" : h < 12 ? "Good morning! What are we building?" : h < 17 ? "Good afternoon! What are we building?" : h < 22 ? "Good evening! What are we building?" : "Late-night build session?";
+  const n = state.settings.userName ? `, ${esc(state.settings.userName)}` : "";
+  const chat = activeChat();
+  if (chat?.incognito) return "Incognito chat. Nothing here is saved.";
+  if (projectOf(chat)) return `What are we building in ${esc(projectOf(chat).name)}?`;
+  return h < 5 ? `Burning the midnight oil${n}?` : h < 12 ? `Good morning${n}! What are we building?` : h < 17 ? `Good afternoon${n}! What are we building?` : h < 22 ? `Good evening${n}! What are we building?` : `Late-night build session${n}?`;
 }
 
 function renderEmpty(thread) {
@@ -277,6 +343,8 @@ function fillAssistant(node, m) {
       else if (s.type === "file") html += fileCard(s, chat, m);
       else if (s.type === "error") html += `<div class="callout err">${icon("alert", 16)}<span>${esc(s.text)}</span></div>`;
       else if (s.type === "tool" && s.tool === "delete") html += `<div class="chip-note">${icon("trash", 13)} Deleted ${esc(s.args.path || "")}</div>`;
+      else if (s.type === "tool" && s.tool === "remember") html += `<div class="chip-note">${icon("brain", 13)} Remembered: ${esc(s.args.text || "")}</div>`;
+      else if (s.type === "thinking") html += `<details class="think"${s.done ? "" : " open"}><summary>${icon("sparkles", 14)} ${s.done ? "Thought process" : "Thinking…"}</summary><div class="think-body">${esc(s.text)}</div></details>`;
     }
     if (m.streaming) html += `<span class="caret" aria-hidden="true"></span>`;
     content.innerHTML = html;
@@ -294,11 +362,43 @@ function fillAssistant(node, m) {
   foot.innerHTML = m.streaming
     ? ""
     : `<div class="msg-actions">
+        ${versionNav(chat, m)}
         <button class="icon-btn tiny" data-copy-msg aria-label="Copy reply">${icon("copy", 14)}</button>
+        ${canSpeak ? `<button class="icon-btn tiny" data-speak aria-label="Read aloud">${icon("volume", 14)}</button>` : ""}
+        <button class="icon-btn tiny${m.feedback === "up" ? " on" : ""}" data-fb="up" aria-label="Good response" aria-pressed="${m.feedback === "up"}">${icon("thumbUp", 14)}</button>
+        <button class="icon-btn tiny${m.feedback === "down" ? " on" : ""}" data-fb="down" aria-label="Bad response" aria-pressed="${m.feedback === "down"}">${icon("thumbDown", 14)}</button>
         ${isLast ? `<button class="icon-btn tiny" data-retry aria-label="Regenerate reply">${icon("refresh", 14)}</button>` : ""}
         ${m.changes?.length && chat?.versions?.some((v) => v.msgId === m.id) ? `<button class="icon-btn tiny" data-undo-msg aria-label="Undo this reply's changes" title="Undo this reply's changes">${icon("history", 14)}</button>` : ""}
         ${m.stopped ? `<span class="muted sm">Stopped</span>` : ""}
         <span class="meta">${esc(m.model || "")}${m.mode && m.mode !== "build" ? ` · ${m.mode}` : ""}${m.tokens ? ` · ~${m.tokens > 999 ? (m.tokens / 1000).toFixed(1) + "k" : m.tokens} tokens` : ""}${m.skills?.length ? ` · ${m.skills.map(esc).join(", ")}` : ""}</span></div>`;
+}
+
+// Response versions (Claude-style "< 2 / 3 >"): every regenerate keeps the earlier answers.
+function parentUser(chat, m) {
+  const i = chat.messages.indexOf(m);
+  for (let k = i - 1; k >= 0; k--) if (chat.messages[k].role === "user") return chat.messages[k];
+  return null;
+}
+function versionNav(chat, m) {
+  if (!chat) return "";
+  const u = parentUser(chat, m);
+  if (!u?.tails || u.tails.length < 2) return "";
+  // Show it on the last assistant message of this turn only.
+  const i = chat.messages.indexOf(m);
+  const next = chat.messages.slice(i + 1).find((x) => x.role !== "tool");
+  if (next && next.role === "assistant") return "";
+  return `<span class="versions-nav"><button class="icon-btn tiny" data-ver="-1" data-user="${u.id}" aria-label="Previous version"${u.tailIndex === 0 ? " disabled" : ""}>${icon("chevronLeft", 14)}</button><span>${u.tailIndex + 1} / ${u.tails.length}</span><button class="icon-btn tiny" data-ver="1" data-user="${u.id}" aria-label="Next version"${u.tailIndex === u.tails.length - 1 ? " disabled" : ""}>${icon("chevronRight", 14)}</button></span>`;
+}
+function switchVersion(chat, userId, dir) {
+  const u = chat.messages.find((m) => m.id === userId);
+  const i = chat.messages.indexOf(u);
+  const target = u.tailIndex + dir;
+  if (!u.tails || target < 0 || target >= u.tails.length) return;
+  u.tails[u.tailIndex] = chat.messages.slice(i + 1);
+  chat.messages.splice(i + 1, Infinity, ...u.tails[target]);
+  u.tailIndex = target;
+  save();
+  renderThread();
 }
 
 function scheduleUpdate(m) {
@@ -412,16 +512,51 @@ $("#thread").addEventListener("click", async (e) => {
   if (e.target.closest("[data-retry]") && !ui.busy) {
     let i = chat.messages.length - 1;
     while (i >= 0 && chat.messages[i].role !== "user") i--;
+    const u = chat.messages[i];
+    const tail = chat.messages.slice(i + 1);
+    u.tails ||= [tail];
+    u.tails[u.tailIndex ?? 0] = tail;
     chat.messages.splice(i + 1);
     save();
     renderThread();
-    run(chat);
+    await run(chat);
+    u.tails.push(chat.messages.slice(i + 1));
+    u.tailIndex = u.tails.length - 1;
+    save();
+    renderThread();
+    return;
+  }
+  const ver = e.target.closest("[data-ver]");
+  if (ver && !ui.busy) return switchVersion(chat, ver.dataset.user, Number(ver.dataset.ver));
+  const fb = e.target.closest("[data-fb]");
+  if (fb && msg) {
+    msg.feedback = msg.feedback === fb.dataset.fb ? undefined : fb.dataset.fb;
+    save();
+    scheduleUpdate(msg);
+    if (msg.feedback) toast(msg.feedback === "up" ? "Thanks! Glad that helped." : "Thanks. Try Regenerate, switch the model, or tell Diji what was off.", "info", { keep: false, ms: 2600 });
+    return;
+  }
+  if (e.target.closest("[data-speak]") && msg) {
+    const b = e.target.closest("[data-speak]");
+    if (b.classList.contains("on")) {
+      stopSpeaking();
+      b.classList.remove("on");
+    } else {
+      document.querySelectorAll("[data-speak].on").forEach((x) => x.classList.remove("on"));
+      b.classList.add("on");
+      speak(msg.content, { onend: () => b.classList.remove("on") });
+    }
+    return;
   }
 });
 
 function renderTitle() {
   const chat = activeChat();
+  if (ui.view !== "chat") return;
   $("#chat-title").textContent = chat?.title || "New chat";
+  $("#chat-menu-btn").hidden = !chat || !chat.messages.length;
+  $("#incognito-btn").setAttribute("aria-pressed", String(Boolean(chat?.incognito)));
+  document.body.classList.toggle("incognito", Boolean(chat?.incognito));
   document.title = chat && chat.messages.length ? `${chat.title} · Diji` : "Diji — the joyful coding agent";
 }
 
@@ -454,7 +589,8 @@ function updateSend() {
 function renderModelBtn() {
   const { provider, model } = state.settings.model;
   const p = providerById(provider);
-  $("#model-btn").innerHTML = `<span class="model-name">${esc(model)}</span><span class="model-prov">${esc(p?.name || provider)}</span>${icon("chevronDown", 15)}`;
+  const eff = state.settings.effort && state.settings.effort !== "medium" ? state.settings.effort : "";
+  $("#model-btn").innerHTML = `<span class="model-name">${esc(model)}</span><span class="model-prov">${esc(p?.name || provider)}</span>${eff ? `<span class="model-eff">${eff}</span>` : ""}${icon("chevronDown", 15)}`;
 }
 
 function renderSkillsBtn() {
@@ -599,7 +735,7 @@ async function resolveMentions(text, chat) {
 
 async function send(text) {
   if (ui.busy || (!text && !ui.attachments.length && !ui.picked)) return;
-  const chat = activeChat() || newChat();
+  const chat = activeChat() || newChat(ui.pendingProject ? { projectId: ui.pendingProject } : {});
   const files = ui.attachments.filter((a) => !a.image);
   const images = ui.attachments.filter((a) => a.image).map((a) => a.image);
   let attachments = files.map((a) => `\n\n<attached-file name="${a.name}">\n${a.text}\n</attached-file>`).join("");
@@ -644,6 +780,7 @@ async function run(chat) {
     const r = await runAgent(chat, {
       signal: ui.abort.signal,
       onUpdate: (m) => chat.id === state.activeId && scheduleUpdate(m),
+      onMemory: (t) => toast(t, "info", { title: "Diji will remember", keep: false, action: { label: "Manage", run: () => openSettings("memory") } }),
       onFiles: (paths) => {
         wroteFiles = [...new Set([...wroteFiles, ...paths])];
         afterFilesChanged(chat);
@@ -686,6 +823,12 @@ function openModelPop() {
         .join("")}</div>`;
     })
     .join("")}
+    <div class="pop-group pop-tune"><h3>Effort</h3><div class="seg sm full">${["low", "medium", "high"]
+      .map((e) => `<label><input type="radio" name="effort" value="${e}"${(state.settings.effort || "medium") === e ? " checked" : ""}><span>${e[0].toUpperCase() + e.slice(1)}</span></label>`)
+      .join("")}</div>
+      <h3>Style</h3><div class="seg sm full">${["normal", "concise", "explanatory", "formal"]
+      .map((e) => `<label><input type="radio" name="style" value="${e}"${(state.settings.style || "normal") === e ? " checked" : ""}><span>${e[0].toUpperCase() + e.slice(1)}</span></label>`)
+      .join("")}</div></div>
     <div class="pop-group"><h3>Bring your own key</h3>${others
       .map((p) => `<button class="pop-item muted-item" data-connect="${p.id}"><span>Connect ${esc(p.name)}</span>${icon("key", 14)}</button>`)
       .join("")}</div></div>`;
@@ -693,6 +836,11 @@ function openModelPop() {
   placePop(pop, $("#model-btn"));
   pop.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "center" });
   pop.querySelector("button")?.focus({ preventScroll: true });
+  pop.querySelectorAll("input[name=effort], input[name=style]").forEach((r) => (r.onchange = () => {
+    state.settings[r.name] = r.value;
+    save();
+    renderModelBtn();
+  }));
   pop.onclick = (e) => {
     const item = e.target.closest("[data-p]");
     const connect = e.target.closest("[data-connect]");
@@ -733,6 +881,7 @@ function closePops() {
   $("#model-pop").hidden = true;
   $("#mode-pop").hidden = true;
   $("#mention-pop").hidden = true;
+  $("#menu-pop").hidden = true;
   $("#notif-pop").hidden = true;
   if (!ui.shipping) $("#ship-pop").hidden = true;
 }
@@ -741,7 +890,7 @@ $("#model-btn").onclick = (e) => {
   $("#model-pop").hidden ? (closePops(), openModelPop()) : closePops();
 };
 document.addEventListener("click", (e) => {
-  if (!e.target.closest(".popover") && !e.target.closest("#model-btn") && !e.target.closest("#bell-btn") && !e.target.closest("#gh-push-btn") && !e.target.closest("#vercel-btn") && !e.target.closest("#mode-btn") && !e.target.closest("[data-import-gh]") && !e.target.closest("[data-import]")) closePops();
+  if (!e.target.closest(".popover") && !e.target.closest("#model-btn") && !e.target.closest("#bell-btn") && !e.target.closest("#gh-push-btn") && !e.target.closest("#vercel-btn") && !e.target.closest("#mode-btn") && !e.target.closest("#project-btn") && !e.target.closest("#perm-btn") && !e.target.closest("#chat-menu-btn") && !e.target.closest("[data-import-gh]") && !e.target.closest("[data-import]")) closePops();
 });
 
 /* ---------- notifications ---------- */
@@ -961,11 +1110,185 @@ function openImport() {
   };
 }
 
+/* ---------- composer meta: project + permission ---------- */
+function renderMeta() {
+  const chat = activeChat();
+  const pid = chat ? chat.projectId : ui.pendingProject;
+  const proj = state.projects.find((x) => x.id === pid);
+  $("#project-btn").innerHTML = `${icon("folder", 14)}<span>${proj ? esc(proj.name) : "No project"}</span>${icon("chevronDown", 13)}`;
+  $("#project-btn").hidden = Boolean(chat?.incognito);
+  const auto = state.settings.autoApply !== false;
+  $("#perm-btn").innerHTML = `${icon(auto ? "zap" : "shield", 14)}<span>${auto ? "Auto" : "Review"}</span>`;
+  $("#perm-btn").title = auto ? "Diji applies file changes on its own" : "You approve every file change";
+  const tag = $("#incog-tag");
+  tag.hidden = !chat?.incognito;
+  tag.innerHTML = `${icon("ghost", 13)} Incognito`;
+}
+
+function menu(anchor, items, { width = 260 } = {}) {
+  const pop = $("#menu-pop");
+  pop.innerHTML = `<div class="pop-scroll">${items
+    .map((it, i) => (it === "-" ? `<hr>` : it.heading ? `<h3 class="menu-h">${esc(it.heading)}</h3>` : `<button role="menuitem" class="pop-item${it.danger ? " danger" : ""}" data-i="${i}" ${it.checked ? 'aria-checked="true"' : ""}>${it.icon ? icon(it.icon, 15) : ""}<span>${esc(it.label)}${it.desc ? `<small>${esc(it.desc)}</small>` : ""}</span>${it.checked ? icon("check", 14) : ""}</button>`))
+    .join("")}</div>`;
+  pop.hidden = false;
+  placePop(pop, anchor);
+  pop.style.width = Math.min(width, innerWidth - 16) + "px";
+  pop.querySelector("button")?.focus({ preventScroll: true });
+  pop.onclick = (e) => {
+    const b = e.target.closest("[data-i]");
+    if (!b) return;
+    closePops();
+    items[b.dataset.i].run();
+  };
+}
+
+$("#project-btn").onclick = (e) => {
+  e.stopPropagation();
+  const chat = activeChat();
+  const cur = chat ? chat.projectId : ui.pendingProject;
+  const assign = (pid) => {
+    if (chat) {
+      chat.projectId = pid || undefined;
+      if (!pid) delete chat.projectId;
+      save();
+      toast(pid ? `This chat now uses “${projectOf(chat).name}”.` : "Removed from the project.", "info", { keep: false });
+    } else ui.pendingProject = pid;
+    renderMeta();
+    renderChatList();
+    if (!chat || !chat.messages.length) renderThread();
+  };
+  menu($("#project-btn"), [
+    { heading: "Use project" },
+    { label: "No project", icon: "chat", checked: !cur, run: () => assign(null) },
+    ...state.projects.map((p) => ({ label: p.name, icon: "folder", checked: p.id === cur, run: () => assign(p.id) })),
+    "-",
+    { label: "New project…", icon: "plus", run: () => { const n = prompt("Project name"); if (n) assign(createProject(n).id); } },
+    { label: "Manage projects", icon: "settings", run: () => setView("projects") },
+  ]);
+};
+
+$("#perm-btn").onclick = (e) => {
+  e.stopPropagation();
+  const set = (v) => {
+    state.settings.autoApply = v;
+    save();
+    renderMeta();
+  };
+  menu($("#perm-btn"), [
+    { heading: "Permission mode" },
+    { label: "Review", icon: "shield", desc: "Diji asks before changing any file", checked: state.settings.autoApply === false, run: () => set(false) },
+    { label: "Auto", icon: "zap", desc: "Diji writes files on its own; undo anything from History", checked: state.settings.autoApply !== false, run: () => set(true) },
+  ], { width: 300 });
+};
+
+/* ---------- chat menu: rename, star, move, export, delete ---------- */
+function chatMarkdown(chat) {
+  const lines = [`# ${chat.title}`, ""];
+  for (const m of chat.messages) {
+    if (m.role === "tool") continue;
+    lines.push(`## ${m.role === "user" ? "You" : "Diji"}`, "", m.role === "assistant" ? m.content.replace(/<think>[\s\S]*?(<\/think>|$)/g, "").trim() : m.content, "");
+  }
+  return lines.join("\n");
+}
+$("#chat-menu-btn").onclick = (e) => {
+  e.stopPropagation();
+  const chat = activeChat();
+  if (!chat) return;
+  const slugName = chat.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "diji-chat";
+  menu($("#chat-menu-btn"), [
+    { label: chat.starred ? "Unstar" : "Star", icon: "star", run: () => { chat.starred = !chat.starred; save(); renderChatList(); } },
+    { label: "Rename", icon: "pencil", run: () => { const t = prompt("Rename chat", chat.title); if (t?.trim()) { chat.title = t.trim().slice(0, 80); save(); renderChatList(); renderTitle(); } } },
+    { label: "Move to project", icon: "folder", run: () => $("#project-btn").click() },
+    "-",
+    { label: "Copy as Markdown", icon: "copy", run: async () => { await navigator.clipboard.writeText(chatMarkdown(chat)).catch(() => {}); toast("Chat copied as Markdown.", "success", { keep: false }); } },
+    { label: "Export as Markdown", icon: "download", run: () => downloadBlob(new Blob([chatMarkdown(chat)], { type: "text/markdown" }), `${slugName}.md`) },
+    "-",
+    { label: "Delete chat", icon: "trash", danger: true, run: () => { deleteChat(chat.id); renderAll(); toast("Chat deleted.", "info", { keep: false }); } },
+  ]);
+};
+
+/* ---------- incognito ---------- */
+$("#incognito-btn").onclick = () => {
+  const cur = activeChat();
+  if (cur?.incognito) {
+    // Leaving incognito: start a normal chat; the incognito one is forgotten.
+    newChat();
+    toast("Incognito chat closed and forgotten.", "info", { keep: false });
+  } else {
+    if (ui.busy) ui.abort?.abort();
+    newChat({ incognito: true, title: "Incognito chat" });
+    toast("Incognito: this chat is not saved and Diji will not remember anything from it.", "info", { keep: false });
+  }
+  setView("chat");
+  input.focus();
+};
+
+/* ---------- voice mode (hands-free) ---------- */
+const voice = { on: false };
+async function voiceLoop() {
+  const st = $("#voice-state"), heard = $("#voice-heard"), m = $("#voice-mascot");
+  while (voice.on) {
+    st.textContent = "Listening…";
+    heard.textContent = "";
+    setMood(m, "idle");
+    let text = "";
+    try {
+      text = await listenOnce((t) => (heard.textContent = t));
+    } catch (err) {
+      toast(err.message, "error", { keep: false });
+      break;
+    }
+    if (!voice.on) break;
+    if (!text.trim()) continue;
+    st.textContent = "Diji is thinking…";
+    setMood(m, "thinking");
+    await send(text.trim());
+    while (ui.busy) await new Promise((r) => setTimeout(r, 250));
+    if (!voice.on) break;
+    const chat = activeChat();
+    const last = [...(chat?.messages || [])].reverse().find((x) => x.role === "assistant");
+    if (!last) continue;
+    st.textContent = "Speaking…";
+    setMood(m, "happy");
+    await new Promise((r) => speak(last.content, { onend: r }));
+  }
+  stopVoice();
+}
+function stopVoice() {
+  voice.on = false;
+  listenOnce.stop();
+  stopSpeaking();
+  $("#voice-overlay").hidden = true;
+}
+$("#voice-btn").onclick = () => {
+  if (ui.busy) return;
+  voice.on = true;
+  $("#voice-mascot").innerHTML = diji(96, "idle");
+  $("#voice-overlay").hidden = false;
+  voiceLoop();
+};
+$("#voice-stop").onclick = stopVoice;
+
+/* ---------- keyboard shortcuts help ---------- */
+function openHelp() {
+  const d = $("#help-modal");
+  const rows = [
+    ["Ctrl K", "New chat"], ["/", "Focus the message box"], ["Enter", "Send (Shift+Enter for a new line)"], ["@", "Mention a file or a web page"],
+    ["Esc", "Close menus, stop picking an element"], ["Ctrl S", "Save while editing a file"], ["Ctrl /", "Show this list"],
+  ];
+  d.innerHTML = `<div class="modal-card help-card"><div class="modal-head"><h2 id="help-title">Keyboard shortcuts</h2><button class="icon-btn" data-close aria-label="Close">${icon("x")}</button></div>
+    <dl class="keys">${rows.map(([k, v]) => `<div><dt>${k.split(" ").map((x) => `<kbd>${x}</kbd>`).join(" ")}</dt><dd>${v}</dd></div>`).join("")}</dl></div>`;
+  d.querySelector("[data-close]").onclick = () => d.close();
+  d.onclick = (e) => e.target === d && d.close();
+  d.showModal();
+}
+
 /* ---------- modes, voice, enhancer, mentions ---------- */
 const MODES = {
   build: { label: "Build", icon: "hammer", desc: "Writes and changes files" },
   plan: { label: "Plan", icon: "map", desc: "Thinks it through first, no file changes" },
   ask: { label: "Ask", icon: "help", desc: "Explains and answers, no file changes" },
+  research: { label: "Research", icon: "telescope", desc: "Searches and reads the web, then reports with sources" },
 };
 function setMode(m) {
   state.settings.mode = m;
@@ -1022,13 +1345,12 @@ $("#enhance-btn").onclick = async () => {
 };
 
 // Voice prompting with the browser's speech recognition (bolt.diy-style).
-const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null;
 if (!Speech) $("#mic-btn").hidden = true;
 $("#mic-btn").onclick = () => {
   if (rec) return rec.stop();
   rec = new Speech();
-  rec.lang = navigator.language || "en-IN";
+  rec.lang = state.settings.voiceLang || navigator.language || "en-IN";
   rec.interimResults = true;
   rec.continuous = true;
   const base = input.value ? input.value.trimEnd() + " " : "";
@@ -1189,11 +1511,14 @@ function renderAll() {
   renderModelBtn();
   renderSkillsBtn();
   renderModeBtn();
+  renderMeta();
   ui.problems = [];
   if (ui.panelOpen) renderPanel();
 }
 
 $("#new-chat").onclick = () => {
+  ui.pendingProject = null;
+  if (ui.view !== "chat") setView("chat");
   if (ui.busy) ui.abort?.abort();
   const cur = activeChat();
   if (!cur || cur.messages.length) newChat();
@@ -1228,12 +1553,17 @@ onSettingsChange(() => {
 onNotificationsChange(renderBell);
 
 addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "/") {
+    e.preventDefault();
+    openHelp();
+  }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
     e.preventDefault();
     $("#new-chat").click();
   }
   if (e.key === "Escape") {
-    if (ui.picking) previewHandlers.onPick();
+    if (voice.on) stopVoice();
+    else if (ui.picking) previewHandlers.onPick();
     else if (!$("#model-pop").hidden || !$("#notif-pop").hidden || !$("#mode-pop").hidden || !$("#mention-pop").hidden) closePops();
     else if (ui.panelOpen && !mq.wide.matches) closePanel();
     else if (document.body.classList.contains("side-open") && !mq.wide.matches) setSidebar(false);

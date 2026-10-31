@@ -34,6 +34,10 @@
       </div>
       <button class="new-chat" id="new-chat"><span id="new-chat-ic"></span>New chat<kbd>Ctrl K</kbd></button>
       <label class="side-search"><span id="search-ic"></span><input id="chat-search" type="search" placeholder="Search chats" aria-label="Search chats"></label>
+      <nav class="side-nav" aria-label="Library">
+        <button class="side-btn" id="nav-projects" data-view="projects"><span id="projects-ic"></span>Projects</button>
+        <button class="side-btn" id="nav-artifacts" data-view="artifacts"><span id="artifacts-ic"></span>Artifacts</button>
+      </nav>
       <nav class="chat-list" id="chat-list"></nav>
       <div class="side-foot">
         <button class="side-btn" id="open-skills"><span id="skills-ic"></span>Skills<span class="side-count" id="skills-count"></span></button>
@@ -51,12 +55,15 @@
       <header class="topbar">
         <button class="icon-btn" id="side-open" aria-label="Open sidebar"></button>
         <h1 class="chat-title" id="chat-title">New chat</h1>
+        <button class="icon-btn" id="chat-menu-btn" aria-label="Chat options" aria-haspopup="menu" hidden></button>
         <div class="top-actions">
+          <button class="icon-btn" id="incognito-btn" aria-label="Start an incognito chat" aria-pressed="false" title="Incognito chat: not saved"></button>
           <button class="pill-btn" id="files-btn" aria-pressed="false"><span id="files-ic"></span><span class="lbl">Workspace</span><span class="pill-count" id="files-count" hidden></span></button>
           <button class="pill-btn" id="browser-btn" aria-pressed="false"><span id="browser-ic"></span><span class="lbl">Browser</span></button>
         </div>
       </header>
 
+      <section class="page" id="page" hidden></section>
       <section class="thread" id="thread" aria-live="polite" aria-busy="false"></section>
       <button class="jump" id="jump" hidden aria-label="Jump to latest"></button>
 
@@ -71,10 +78,17 @@
             <button type="button" class="chip-btn" id="skills-btn" aria-haspopup="dialog"></button>
             <div class="spacer"></div>
             <button type="button" class="icon-btn" id="enhance-btn" aria-label="Enhance prompt" title="Enhance prompt"></button>
-            <button type="button" class="icon-btn" id="mic-btn" aria-label="Talk to Diji" aria-pressed="false" title="Voice input"></button>
-            <button type="button" class="model-btn" id="model-btn" aria-haspopup="listbox"></button>
+            <button type="button" class="icon-btn" id="mic-btn" aria-label="Dictate" aria-pressed="false" title="Dictate"></button>
+            <button type="button" class="icon-btn" id="voice-btn" aria-label="Voice mode" title="Voice mode: talk with Diji hands-free"></button>
             <button type="submit" class="send" id="send-btn" aria-label="Send"></button>
           </div>
+        </div>
+        <div class="composer-meta">
+          <button type="button" class="meta-btn" id="project-btn" aria-haspopup="menu"></button>
+          <span class="incog-tag" id="incog-tag" hidden></span>
+          <div class="spacer"></div>
+          <button type="button" class="model-btn" id="model-btn" aria-haspopup="listbox"></button>
+          <button type="button" class="meta-btn" id="perm-btn" aria-haspopup="menu"></button>
         </div>
         <p class="fineprint">Diji can make mistakes. Check important code before you ship it.</p>
       </form>
@@ -104,6 +118,12 @@
   <div class="popover notif-pop" id="notif-pop" role="dialog" aria-label="Notifications" hidden></div>
   <div class="popover ship-pop" id="ship-pop" role="dialog" aria-labelledby="ship-title" hidden></div>
   <div class="popover" id="mode-pop" role="listbox" aria-label="Choose a mode" hidden></div>
+  <div class="popover" id="menu-pop" role="menu" hidden></div>
+  <div class="voice-overlay" id="voice-overlay" hidden role="dialog" aria-label="Voice mode">
+    <div class="voice-card"><div class="voice-mascot" id="voice-mascot"></div><p class="voice-state" id="voice-state">Listening…</p><p class="voice-heard" id="voice-heard"></p>
+      <button type="button" class="btn-primary" id="voice-stop">End voice mode</button></div>
+  </div>
+  <dialog class="modal" id="help-modal" aria-labelledby="help-title"></dialog>
   <div class="popover mention-pop" id="mention-pop" role="listbox" aria-label="Mention a file" hidden></div>
   <dialog class="modal" id="settings-modal" aria-labelledby="settings-title"></dialog>
   <dialog class="modal" id="skills-modal" aria-labelledby="skills-title"></dialog>

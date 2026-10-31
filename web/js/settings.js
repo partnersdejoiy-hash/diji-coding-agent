@@ -43,6 +43,7 @@ export function openSettings(tab = currentTab, providerId) {
     ["cloud", "Cloud browser", "cloud"],
     ["deploy", "GitHub & Vercel", "github"],
     ["prefs", "Preferences", "settings"],
+    ["memory", "Memory", "brain"],
     ["data", "Data & privacy", "layers"],
   ];
   modalShell(
@@ -58,7 +59,7 @@ export function openSettings(tab = currentTab, providerId) {
   );
   dialog.querySelectorAll(".snav").forEach((b) => (b.onclick = () => openSettings(b.dataset.tab)));
   const body = $("#settings-body", dialog);
-  ({ models: renderModels, cloud: renderCloud, deploy: renderDeploy, prefs: renderPrefs, data: renderData })[tab](body);
+  ({ models: renderModels, cloud: renderCloud, deploy: renderDeploy, prefs: renderPrefs, memory: renderMemory, data: renderData })[tab](body);
 }
 
 function renderModels(body) {
@@ -262,6 +263,13 @@ function renderPrefs(body) {
     <fieldset class="field"><legend>Theme</legend><div class="seg">
       ${["system", "light", "dark"].map((t) => `<label><input type="radio" name="theme" value="${t}"${s.theme === t ? " checked" : ""}><span>${icon({ system: "monitor", light: "sun", dark: "moon" }[t], 15)} ${t[0].toUpperCase() + t.slice(1)}</span></label>`).join("")}
     </div></fieldset>
+    <label class="field"><span>Response style</span><select id="pstyle">
+      ${[["normal", "Normal"], ["concise", "Concise: short and direct"], ["explanatory", "Explanatory: teaches as it goes"], ["formal", "Formal: clear, professional"]]
+        .map(([v, l]) => `<option value="${v}"${(s.style || "normal") === v ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+    <label class="field"><span>Voice language</span><select id="pvoice">
+      ${[["", "Same as browser"], ["en-IN", "English (India)"], ["hi-IN", "Hindi"], ["en-US", "English (US)"], ["en-GB", "English (UK)"], ["bn-IN", "Bengali"], ["ta-IN", "Tamil"], ["te-IN", "Telugu"], ["mr-IN", "Marathi"], ["es-ES", "Spanish"], ["fr-FR", "French"], ["de-DE", "German"], ["ja-JP", "Japanese"]]
+        .map(([v, l]) => `<option value="${v}"${(s.voiceLang || "") === v ? " selected" : ""}>${l}</option>`).join("")}</select>
+      <small class="muted">Used for dictation, voice mode and read aloud.</small></label>
     <label class="switch"><input type="checkbox" id="penter"${s.enterToSend ? " checked" : ""}><span class="track"></span><span>Enter sends, Shift+Enter adds a line</span></label>
     <label class="switch"><input type="checkbox" id="papply"${s.autoApply !== false ? " checked" : ""}><span class="track"></span><span>Apply Diji's file changes automatically (off = review and approve each change)</span></label>
     <label class="field"><span>Project rules</span>
@@ -275,6 +283,14 @@ function renderPrefs(body) {
     save();
     onChange();
   }));
+  $("#pstyle", body).onchange = (e) => {
+    s.style = e.target.value;
+    save();
+  };
+  $("#pvoice", body).onchange = (e) => {
+    s.voiceLang = e.target.value;
+    save();
+  };
   $("#penter", body).onchange = (e) => {
     s.enterToSend = e.target.checked;
     save();
@@ -296,6 +312,52 @@ function renderPrefs(body) {
     s.temperature = Number(e.target.value);
     $("#ptempv", body).textContent = s.temperature;
     save();
+  };
+}
+
+function renderMemory(body) {
+  const s = state.settings;
+  s.memory ||= [];
+  body.innerHTML = `
+    <h3>Memory</h3>
+    <p class="muted">What Diji knows about you, carried into every chat. Incognito chats never read or add to it.</p>
+    <label class="field"><span>What should Diji call you?</span><input id="mname" value="${esc(s.userName || "")}" placeholder="Your name" maxlength="40" autocomplete="given-name"></label>
+    <label class="switch"><input type="checkbox" id="mon"${s.memoryOn !== false ? " checked" : ""}><span class="track"></span><span>Let Diji remember preferences and facts you share</span></label>
+    <div class="field"><span>Saved memories</span>
+      <ul class="plain-list mem-list">${s.memory
+        .map((m) => `<li><span>${esc(m.text)}</span><button type="button" class="icon-btn tiny" data-forget="${m.id}" aria-label="Forget: ${esc(m.text)}">${icon("x", 13)}</button></li>`)
+        .join("") || `<li class="muted sm">Nothing yet. Tell Diji things like “I use React and Tailwind” and it will remember.</li>`}</ul>
+      <form class="input-row" id="madd"><input id="mtext" placeholder="Add a memory, e.g. I prefer TypeScript" maxlength="200"><button class="btn-ghost sm">${icon("plus", 14)} Add</button></form>
+    </div>
+    ${s.memory.length ? `<button type="button" class="btn-danger sm" id="mclear">${icon("trash", 14)} Forget everything</button>` : ""}`;
+  $("#mname", body).oninput = (e) => {
+    s.userName = e.target.value.trim();
+    save();
+    onChange();
+  };
+  $("#mon", body).onchange = (e) => {
+    s.memoryOn = e.target.checked;
+    save();
+  };
+  body.querySelectorAll("[data-forget]").forEach((b) => (b.onclick = () => {
+    s.memory = s.memory.filter((m) => m.id !== b.dataset.forget);
+    save();
+    renderMemory(body);
+  }));
+  $("#madd", body).onsubmit = (e) => {
+    e.preventDefault();
+    const text = $("#mtext", body).value.trim();
+    if (!text) return;
+    s.memory.push({ id: Math.random().toString(36).slice(2, 10), text, at: Date.now() });
+    save();
+    renderMemory(body);
+  };
+  const clear = $("#mclear", body);
+  if (clear) clear.onclick = () => {
+    if (!confirm("Forget everything Diji remembers about you?")) return;
+    s.memory = [];
+    save();
+    renderMemory(body);
   };
 }
 

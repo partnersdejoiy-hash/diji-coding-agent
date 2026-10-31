@@ -110,7 +110,7 @@ async function upstreamError(res, label) {
   return new HttpError(res.status >= 500 ? 502 : res.status, `${label} answered ${res.status}.${hint}${detail ? " " + detail : ""}`);
 }
 
-async function* streamOpenAI(t, { system, messages, temperature, maxTokens }, signal) {
+async function* streamOpenAI(t, { system, messages, temperature, maxTokens, effort }, signal) {
   const url = trimSlash(t.baseUrl) + (t.chatPath ?? "/chat/completions");
   const headers = { "content-type": "application/json" };
   if (t.apiKey) headers.authorization = `Bearer ${t.apiKey}`;
@@ -127,6 +127,8 @@ async function* streamOpenAI(t, { system, messages, temperature, maxTokens }, si
       stream: true,
       temperature,
       ...(maxTokens ? { max_tokens: maxTokens } : {}),
+      // Only OpenAI's own reasoning models accept this; other endpoints would reject an unknown field.
+      ...(effort && url.includes("api.openai.com") && /^(o\d|gpt-5)/.test(t.model) ? { reasoning_effort: effort } : {}),
       messages: [...(system ? [{ role: "system", content: system }] : []), ...messages],
     }),
   });
@@ -139,8 +141,9 @@ async function* streamOpenAI(t, { system, messages, temperature, maxTokens }, si
     if (text) yield text;
     return;
   }
+  let thinking = false;
   for await (const data of sseData(res.body)) {
-    if (data === "[DONE]") return;
+    if (data === "[DONE]") break;
     let j;
     try {
       j = JSON.parse(data);
@@ -148,9 +151,21 @@ async function* streamOpenAI(t, { system, messages, temperature, maxTokens }, si
       continue;
     }
     if (j.error) throw new HttpError(502, j.error.message || "The model stopped with an error.");
-    const piece = j.choices?.[0]?.delta?.content;
-    if (piece) yield piece;
+    const delta = j.choices?.[0]?.delta || {};
+    // DeepSeek, OpenRouter and others stream reasoning separately; wrap it so the UI can fold it.
+    const reasoning = delta.reasoning_content || delta.reasoning;
+    if (typeof reasoning === "string" && reasoning) {
+      if (!thinking) yield "<think>";
+      thinking = true;
+      yield reasoning;
+    }
+    if (delta.content) {
+      if (thinking) yield "</think>\n\n";
+      thinking = false;
+      yield delta.content;
+    }
   }
+  if (thinking) yield "</think>";
 }
 
 async function* streamAnthropic(t, { system, messages, temperature, maxTokens }, signal) {
@@ -233,6 +248,7 @@ export async function* streamChat(body, signal) {
     messages: cleanMessages(body.messages),
     temperature: Number.isFinite(body.temperature) ? Math.min(Math.max(body.temperature, 0), 2) : 0.4,
     maxTokens: Number.isInteger(body.maxTokens) ? Math.min(body.maxTokens, 64_000) : undefined,
+    effort: ["low", "medium", "high"].includes(body.effort) ? body.effort : undefined,
   };
   let lastErr;
   for (const t of targets) {

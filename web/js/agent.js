@@ -1,6 +1,6 @@
 // The agent loop: stream a reply, apply the files it wrote, run the web tools it asked for, repeat.
 // Tools are plain-text tags so every model works, including ones without native function calling.
-import { state, providerSettings, apiBase, serverHeaders, uid, save } from "./store.js";
+import { state, providerSettings, apiBase, serverHeaders, uid, save, projectOf } from "./store.js";
 import { providerById } from "../shared/catalog.js";
 import { segments, toolCalls } from "./markdown.js";
 import { fileChanges } from "./workspace.js";
@@ -59,9 +59,46 @@ function workspaceSection(files) {
 }
 
 const MODE_PROMPTS = {
+  research: `\n\n## RESEARCH MODE (active)\nResearch thoroughly before answering. Run 3 to 5 diji-search queries from different angles (one per reply turn is fine), read the 2 to 4 most useful sources with diji-browse, then write a structured report: a short answer first, then findings with headings, trade-offs, and a "Sources" list of the URLs you used. Do not write or change files unless the user asked for code.`,
   plan: `\n\n## PLAN MODE (active)\nDo not write or change any files in this reply. Study the request and the workspace, then reply with: a one-line goal, the files you will create or change (and why), the key decisions with your recommendation, and a short numbered build plan. Ask at most one question if something is truly undecided. End with: "Switch to Build and I will make it."`,
   ask: `\n\n## ASK MODE (active)\nAnswer, explain or review only. Do not write or change any files in this reply. Quote short code snippets in normal fenced blocks without file= when they help.`,
 };
+
+const EFFORT = {
+  low: "\n\nEffort: low. Be quick and concise. Ship the simplest thing that works; skip extras.",
+  high: "\n\nEffort: high. Take extra care: think through edge cases, accessibility and responsiveness, double-check your code before sending, and polish the details.",
+};
+const STYLES = {
+  concise: "\n\nResponse style: concise. Keep prose to a few short lines; let the code speak.",
+  explanatory: "\n\nResponse style: explanatory. Teach as you go: briefly explain the why behind key decisions so a learner understands the code.",
+  formal: "\n\nResponse style: formal. Clear, professional, structured language; no casual phrasing or emoji.",
+};
+
+function memorySection() {
+  const s = state.settings;
+  const lines = [];
+  if (s.userName) lines.push(`The user's name is ${s.userName}.`);
+  if (s.memoryOn !== false) for (const m of s.memory || []) lines.push(m.text);
+  let out = lines.length ? `\n\n## What you know about the user\n${lines.map((l) => "- " + l).join("\n")}` : "";
+  if (s.memoryOn !== false) out += `\n\nMemory: when the user shares a lasting preference or fact about themselves or their work (stack, style, name, goals), save it with <diji-remember text="short fact"/>. Never save secrets, keys or passwords.`;
+  return out;
+}
+
+function projectSection(chat) {
+  const p = projectOf(chat);
+  if (!p) return "";
+  let out = `\n\n## Project: ${p.name}`;
+  if (p.instructions?.trim()) out += `\nInstructions (always follow):\n${p.instructions.trim()}`;
+  const files = Object.entries(p.files || {});
+  let budget = 30000;
+  for (const [name, text] of files) {
+    const slice = text.slice(0, Math.max(0, budget));
+    budget -= slice.length;
+    out += `\n\n<project-knowledge name="${name}">\n${slice}\n</project-knowledge>`;
+    if (budget <= 0) break;
+  }
+  return out;
+}
 
 // Project rules, like Cline's .clinerules: global ones from Settings, plus a rules file in the workspace.
 function rulesSection(chat) {
@@ -73,7 +110,7 @@ function rulesSection(chat) {
 
 async function systemPrompt(chat, prompt) {
   const skills = activeSkills(prompt);
-  let text = BASE_PROMPT + (MODE_PROMPTS[state.settings.mode] || "") + rulesSection(chat);
+  let text = BASE_PROMPT + (MODE_PROMPTS[state.settings.mode] || "") + (EFFORT[state.settings.effort] || "") + (STYLES[state.settings.style] || "") + memorySection() + projectSection(chat) + rulesSection(chat);
   if (chat.locked?.length) text += `\n\nLocked files (the user froze these; never rewrite or delete them): ${chat.locked.join(", ")}`;
   if (!serverConfigured()) text += "\n\nNote: the cloud browser is offline right now, so do not use diji-search or diji-browse. Answer from what you know and say when something may be out of date.";
   if (skills.length) {
@@ -89,7 +126,8 @@ function apiMessages(chat) {
   const lastImg = msgs.findLastIndex((m) => m.images?.length);
   return msgs.map((m, i) => {
     const role = m.role === "assistant" ? "assistant" : "user";
-    const text = m.role === "tool" ? m.content : m.content + (m.attachments || "");
+    const body = m.role === "assistant" ? m.content.replace(/<think>[\s\S]*?(<\/think>|$)/g, "").trim() : m.content;
+    const text = m.role === "tool" ? m.content : body + (m.attachments || "");
     if (!m.images?.length) return { role, content: text };
     if (i !== lastImg) return { role, content: `${text}\n\n(${m.images.length} image${m.images.length > 1 ? "s" : ""} attached earlier)` };
     return { role, content: [{ type: "text", text }, ...m.images.map((url) => ({ type: "image_url", image_url: { url } }))] };
@@ -113,7 +151,8 @@ async function stream(chat, system, onText, signal, override) {
       temperature: s.temperature,
       system,
       messages: override?.messages || apiMessages(chat),
-      ...(override?.maxTokens ? { maxTokens: override.maxTokens } : {}),
+      ...(override?.maxTokens ? { maxTokens: override.maxTokens } : s.effort === "high" ? { maxTokens: 16000 } : s.effort === "low" ? { maxTokens: 4096 } : {}),
+      ...(override ? {} : { effort: s.effort }),
     }),
   });
   if (!res.ok) {
@@ -155,9 +194,10 @@ async function runTool(call) {
   return null;
 }
 
-export async function runAgent(chat, { onUpdate, onFiles, signal }) {
+export async function runAgent(chat, { onUpdate, onFiles, onMemory, signal }) {
   const prompt = [...chat.messages].reverse().find((m) => m.role === "user")?.content || "";
-  for (let step = 0; step < MAX_STEPS; step++) {
+  const steps = state.settings.mode === "research" ? 10 : MAX_STEPS;
+  for (let step = 0; step < steps; step++) {
     const { text: system, skills } = await systemPrompt(chat, prompt);
     const msg = { id: uid(), role: "assistant", content: "", streaming: true, model: `${state.settings.model.model}`, mode: state.settings.mode || "build", skills: skills.map((s) => s.name) };
     chat.messages.push(msg);
@@ -198,7 +238,17 @@ export async function runAgent(chat, { onUpdate, onFiles, signal }) {
     onUpdate(msg);
     save();
 
-    const calls = toolCalls(msg.content).filter((c) => c.tool !== "delete").slice(0, MAX_TOOLS_PER_STEP);
+    // Memory saves are applied right away; they are not web tools.
+    for (const c of toolCalls(msg.content).filter((c) => c.tool === "remember" && c.args.text)) {
+      if (state.settings.memoryOn === false || chat.incognito) continue;
+      const text = c.args.text.slice(0, 200);
+      if (!state.settings.memory.some((m) => m.text.toLowerCase() === text.toLowerCase())) {
+        state.settings.memory.push({ id: uid(), text, at: Date.now() });
+        save();
+        onMemory?.(text);
+      }
+    }
+    const calls = toolCalls(msg.content).filter((c) => c.tool === "search" || c.tool === "browse").slice(0, MAX_TOOLS_PER_STEP);
     if (!calls.length || signal.aborted) return { files: changed };
     for (const call of calls) {
       const tm = { id: uid(), role: "tool", tool: call.tool, args: call.args, content: "", pending: true };

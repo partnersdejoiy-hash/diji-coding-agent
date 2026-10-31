@@ -52,13 +52,21 @@ export function toolCalls(text) {
 // Line scanner so fences, file blocks and tags never get confused with each other.
 export function segments(text) {
   const out = [];
+  // Reasoning from thinking models arrives as <think>…</think>; it is shown folded, never parsed for files.
+  const t = text || "";
+  const open = t.indexOf("<think>");
+  if (open !== -1) {
+    const close = t.indexOf("</think>", open);
+    out.push({ type: "thinking", text: t.slice(open + 7, close === -1 ? undefined : close).trim(), done: close !== -1 });
+    text = t.slice(0, open) + (close === -1 ? "" : t.slice(close + 8));
+  }
   let buf = [];
   const flush = () => {
     if (!buf.length) return;
     const t = buf.join("\n");
     buf = [];
     let last = 0;
-    for (const m of t.matchAll(/<diji-error>([\s\S]*?)<\/diji-error>|<diji-(browse|search|delete)\b([^>]*?)\/?>(?:\s*<\/diji-\2>)?/g)) {
+    for (const m of t.matchAll(/<diji-error>([\s\S]*?)<\/diji-error>|<diji-(browse|search|delete|remember)\b([^>]*?)\/?>(?:\s*<\/diji-\2>)?/g)) {
       if (m.index > last) out.push({ type: "text", text: t.slice(last, m.index) });
       if (m[1] !== undefined) out.push({ type: "error", text: m[1] });
       else out.push({ type: "tool", tool: m[2], args: parseAttrs(m[3]) });

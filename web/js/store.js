@@ -9,6 +9,7 @@ export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().to
 
 const defaults = () => ({
   chats: [],
+  projects: [], // { id, name, instructions, files: { name: text }, created }
   activeId: null,
   settings: {
     model: { ...DEFAULT_MODEL },
@@ -22,7 +23,13 @@ const defaults = () => ({
     systemNotify: false,
     temperature: 0.4,
     autoSkills: true,
-    mode: "build", // build | plan | ask
+    mode: "build", // build | plan | ask | research
+    effort: "medium", // low | medium | high
+    style: "normal", // normal | concise | explanatory | formal
+    userName: "",
+    memoryOn: true,
+    memory: [], // { id, text, at } facts Diji remembers across chats
+    voiceLang: "",
     autoApply: true, // false = review every change before it touches files
     rules: "", // project rules sent with every request
     skills: [], // manually pinned skill ids
@@ -38,6 +45,7 @@ function load() {
     const saved = JSON.parse(localStorage.getItem(KEY) || "null");
     if (saved) {
       base.chats = Array.isArray(saved.chats) ? saved.chats : [];
+      base.projects = Array.isArray(saved.projects) ? saved.projects : [];
       base.activeId = saved.activeId || null;
       base.settings = { ...base.settings, ...saved.settings };
       // A deployment default fills in an empty saved server URL (people who never set one).
@@ -69,7 +77,9 @@ export function save() {
         for (const [id, p] of Object.entries(s.providers)) if (p.key) (keys[id] = p.key), delete p.key;
         sessionStorage.setItem(KEYS_SESSION, JSON.stringify(keys));
       }
-      localStorage.setItem(KEY, JSON.stringify({ chats: state.chats, activeId: state.activeId, settings: s, notifications: state.notifications }));
+      // Incognito chats are never written to storage.
+      const chats = state.chats.filter((c) => !c.incognito);
+      localStorage.setItem(KEY, JSON.stringify({ chats, projects: state.projects, activeId: state.activeId, settings: s, notifications: state.notifications }));
     } catch (e) {
       // Quota exceeded: drop the oldest chats' tool output and retry once.
       if (state.chats.length > 1 && !save.retried) {
@@ -87,8 +97,10 @@ export function save() {
 
 export const activeChat = () => state.chats.find((c) => c.id === state.activeId) || null;
 
-export function newChat() {
-  const chat = { id: uid(), title: "New chat", messages: [], files: {}, created: Date.now(), updated: Date.now() };
+export function newChat(extra = {}) {
+  // Leaving an incognito chat forgets it.
+  state.chats = state.chats.filter((c) => !c.incognito);
+  const chat = { id: uid(), title: "New chat", messages: [], files: {}, created: Date.now(), updated: Date.now(), ...extra };
   state.chats.unshift(chat);
   state.activeId = chat.id;
   save();
@@ -113,3 +125,5 @@ export function serverHeaders() {
   if (state.settings.serverToken) h["x-diji-token"] = state.settings.serverToken;
   return h;
 }
+
+export const projectOf = (chat) => (chat?.projectId ? state.projects.find((p) => p.id === chat.projectId) : null);
