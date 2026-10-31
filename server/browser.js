@@ -79,7 +79,9 @@ setInterval(() => {
 }, 60_000).unref();
 
 async function snapshot(page) {
-  await page.waitForLoadState("domcontentloaded", { timeout: 8000 }).catch(() => {});
+  await page.waitForLoadState("domcontentloaded", { timeout: 15000 }).catch(() => {});
+  // Give late content (lazy lists, images) a short moment without waiting on endless trackers.
+  await page.waitForLoadState("networkidle", { timeout: 2500 }).catch(() => {});
   const shot = await page.screenshot({ type: "jpeg", quality: 62 });
   return { url: page.url(), title: await page.title().catch(() => ""), shot: shot.toString("base64") };
 }
@@ -116,7 +118,8 @@ export async function browserAction(action, body) {
   const { page } = await getSession(body.sessionId);
   const go = async (url) => {
     if (blocked(url)) throw new BrowserError(400, "That address is private or not a web page, so the cloud browser will not open it.");
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 25000 }).catch((e) => {
+    // Wait only for the first response; snapshot() then shows whatever has rendered, so slow sites still appear.
+    await page.goto(url, { waitUntil: "commit", timeout: 25000 }).catch((e) => {
       const code = (e.message.match(/net::(ERR_[A-Z_]+)/) || [])[1];
       const why = /TIMED_OUT|Timeout/i.test(e.message) ? "it took too long to load" : code === "ERR_NAME_NOT_RESOLVED" ? "that address does not exist" : code ? `the network said ${code}` : "it failed to load";
       throw new BrowserError(502, `Could not open ${new URL(url).hostname || "the page"}: ${why}.`);
