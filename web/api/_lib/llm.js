@@ -134,8 +134,8 @@ async function* streamOpenAI(t, { system, messages, temperature, maxTokens, effo
       // Only OpenAI's own reasoning models accept this; other endpoints would reject an unknown field.
       ...(effort && url.includes("api.openai.com") && /^(o\d|gpt-5)/.test(t.model) ? { reasoning_effort: effort } : {}),
       // OpenRouter: keep reasoning models from spending the whole output budget on thinking.
-      // Low effort turns thinking off, medium caps it, high lets it think more.
-      ...(url.includes("openrouter.ai") ? { reasoning: effort === "low" ? { enabled: false } : effort === "high" ? { effort: "medium" } : { max_tokens: 2500 } } : {}),
+      // Free models tend to think until the output budget is gone: thinking is off unless effort is high.
+      ...(url.includes("openrouter.ai") ? { reasoning: effort === "high" ? { effort: "low" } : { enabled: false } } : {}),
       messages: [...(system ? [{ role: "system", content: system }] : []), ...messages],
     }),
   });
