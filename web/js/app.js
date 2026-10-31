@@ -1,6 +1,7 @@
 // Diji app shell: sidebar, thread, composer, workspace panel, popovers. Plain DOM, no framework.
 import { state, save, activeChat, newChat, deleteChat, uid, projectOf } from "./store.js";
 import { renderProjects, renderProject, renderArtifacts, createProject } from "./pages.js";
+import { renderAgents, agentOf } from "./agents.js";
 import { Speech, canSpeak, speak, stopSpeaking, listenOnce, speakable } from "./voice.js";
 import { PROVIDERS, providerById } from "../shared/catalog.js";
 import { icon } from "./icons.js";
@@ -69,6 +70,7 @@ function paintIcons() {
   $("#drop-ic").innerHTML = icon("upload", 28);
   $("#projects-ic").innerHTML = icon("folder", 17);
   $("#artifacts-ic").innerHTML = icon("layers", 17);
+  $("#agents-ic").innerHTML = icon("bot", 17);
   $("#chat-menu-btn").innerHTML = icon("chevronDown", 16);
   $("#incognito-btn").innerHTML = icon("ghost", 18);
   $("#voice-btn").innerHTML = icon("audio", 17);
@@ -132,8 +134,13 @@ function setView(view) {
     if (view === "projects") renderProjects(page, h);
     else if (view.startsWith("project:")) renderProject(page, view.slice(8), h);
     else if (view === "artifacts") renderArtifacts(page, h);
+    else if (view === "agents") renderAgents(page, { chatWith: (id) => {
+      newChat({ agentId: id });
+      setView("chat");
+      input.focus();
+    } });
     const p = view.startsWith("project:") ? state.projects.find((x) => x.id === view.slice(8)) : null;
-    $("#chat-title").textContent = p ? p.name : view === "artifacts" ? "Artifacts" : "Projects";
+    $("#chat-title").textContent = p ? p.name : { artifacts: "Artifacts", agents: "Agents" }[view] || "Projects";
     $("#chat-menu-btn").hidden = true;
     page.scrollTop = 0;
   } else renderAll();
@@ -236,16 +243,19 @@ function greeting() {
   const n = state.settings.userName ? `, ${esc(state.settings.userName)}` : "";
   const chat = activeChat();
   if (chat?.incognito) return "Incognito chat. Nothing here is saved.";
+  if (agentOf(chat)) return `${esc(agentOf(chat).name)} is ready${n}.`;
   if (projectOf(chat)) return `What are we building in ${esc(projectOf(chat).name)}?`;
   return h < 5 ? `Burning the midnight oil${n}?` : h < 12 ? `Good morning${n}! What are we building?` : h < 17 ? `Good afternoon${n}! What are we building?` : h < 22 ? `Good evening${n}! What are we building?` : `Late-night build session${n}?`;
 }
 
 function renderEmpty(thread) {
+  const agent = agentOf(activeChat());
+  const starters = agent?.starters?.length ? agent.starters.map((t) => ({ t, d: agent.name, p: t })) : STARTERS;
   thread.innerHTML = `<div class="empty">
     <div class="empty-mascot">${diji(88, "happy")}</div>
     <h2 class="empty-title">${greeting()}</h2>
-    <p class="empty-sub">I'm Diji. I write code you can run, preview it live, and look things up in a real browser when I need to.</p>
-    <div class="starters">${STARTERS.map((s, i) => `<button class="starter" data-starter="${i}"><strong>${s.t}</strong><span>${s.d}</span></button>`).join("")}</div>
+    <p class="empty-sub">${agent ? esc(agent.description) : "I'm Diji. I write code you can run, preview it live, and look things up in a real browser when I need to."}</p>
+    <div class="starters">${starters.map((s, i) => `<button class="starter" data-starter="${i}"><strong>${esc(s.t)}</strong><span>${esc(s.d)}</span></button>`).join("")}</div>
     <div class="templates"><span class="muted">Start from</span>${TEMPLATES.map((t, i) => `<button class="tpl" data-tpl="${i}">${t.t}</button>`).join("")}<button class="tpl" data-import-gh>${icon("github", 13)} GitHub repo</button></div>
   </div>`;
   thread.querySelectorAll("[data-tpl]").forEach((b) => (b.onclick = () => {
@@ -256,7 +266,7 @@ function renderEmpty(thread) {
   thread.querySelector("[data-import-gh]").onclick = openImport;
   thread.querySelectorAll("[data-starter]").forEach((b) => (b.onclick = () => {
     const input = $("#composer-input");
-    input.value = STARTERS[b.dataset.starter].p;
+    input.value = starters[b.dataset.starter].p;
     autosize();
     input.focus();
   }));
@@ -305,6 +315,15 @@ function messageEl(m) {
 }
 
 function fillTool(node, m) {
+  if (m.tool === "mcp") {
+    const st = m.pending ? `<span class="spinner"></span>` : m.failed ? icon("alert", 15) : icon("check", 15);
+    node.className = `msg tool${m.pending ? " pending" : ""}${m.failed ? " failed" : ""}`;
+    node.innerHTML = `<details class="tool-card mcp-card"><summary><span class="tool-ic">${icon("plug", 15)}</span>
+      <span class="tool-text"><span class="tool-label">${m.pending ? `Using ${esc(m.args.server)} · ${esc(m.args.tool)}…` : `Used ${esc(m.args.server)} · ${esc(m.args.tool)}`}</span>
+      ${m.failed ? `<span class="tool-err">${esc(m.failed)}</span>` : ""}</span><span class="tool-status">${st}</span></summary>
+      ${m.content && !m.pending ? `<pre class="mcp-out">${esc(m.content.replace(/^<diji-result[^>]*>\n?|\n?<\/diji-result>$/g, "").slice(0, 4000))}</pre>` : ""}</details>`;
+    return;
+  }
   const label = m.tool === "search" ? `Searched the web for “${esc(m.args.query || "")}”` : `Read ${esc(m.title || m.args.url || "a page")}`;
   const status = m.pending ? `<span class="spinner"></span>` : m.failed ? icon("alert", 15) : icon("check", 15);
   node.className = `msg tool${m.pending ? " pending" : ""}${m.failed ? " failed" : ""}`;
@@ -553,7 +572,8 @@ $("#thread").addEventListener("click", async (e) => {
 function renderTitle() {
   const chat = activeChat();
   if (ui.view !== "chat") return;
-  $("#chat-title").textContent = chat?.title || "New chat";
+  const ag = agentOf(chat);
+  $("#chat-title").innerHTML = `${ag ? `<span class="agent-chip">${icon(ag.icon || "sparkles", 13)}${esc(ag.name)}</span>` : ""}${esc(chat?.title || "New chat")}`;
   $("#chat-menu-btn").hidden = !chat || !chat.messages.length;
   $("#incognito-btn").setAttribute("aria-pressed", String(Boolean(chat?.incognito)));
   document.body.classList.toggle("incognito", Boolean(chat?.incognito));
@@ -1279,7 +1299,9 @@ function openHelp() {
   d.innerHTML = `<div class="modal-card help-card"><div class="modal-head"><h2 id="help-title">Keyboard shortcuts</h2><button class="icon-btn" data-close aria-label="Close">${icon("x")}</button></div>
     <dl class="keys">${rows.map(([k, v]) => `<div><dt>${k.split(" ").map((x) => `<kbd>${x}</kbd>`).join(" ")}</dt><dd>${v}</dd></div>`).join("")}</dl></div>`;
   d.querySelector("[data-close]").onclick = () => d.close();
-  d.onclick = (e) => e.target === d && d.close();
+  d.onclick = (e) => {
+    if (e.target === d) d.close();
+  };
   d.showModal();
 }
 

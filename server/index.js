@@ -4,7 +4,7 @@ import { readFile, stat } from "node:fs/promises";
 import { join, normalize, extname } from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
-import { chatHandler, modelsHandler, deployHandler, corsHeaders, json } from "../web/api/_lib/handlers.js";
+import { chatHandler, modelsHandler, deployHandler, mcpHandler, corsHeaders, json } from "../web/api/_lib/handlers.js";
 import { browserAction, BrowserError, shutdownBrowsers } from "./browser.js";
 
 const PORT = Number(process.env.PORT || 8787);
@@ -90,6 +90,10 @@ const server = http.createServer(async (req, res) => {
       return await send(res, await chatHandler(request));
     }
     if (path === "/api/models") return await send(res, await modelsHandler(request));
+    if (path === "/api/mcp") {
+      if (limited(who + ":mcp", 60)) return await send(res, json(request, 429, { error: "Too many plugin calls this minute." }));
+      return await send(res, await mcpHandler(request));
+    }
     if (path === "/api/deploy") {
       if (limited(who + ":deploy", 10)) return await send(res, json(request, 429, { error: "Too many deploys this minute." }));
       return await send(res, await deployHandler(request));

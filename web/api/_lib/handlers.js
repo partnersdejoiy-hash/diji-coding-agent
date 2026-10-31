@@ -1,6 +1,7 @@
 // Web-standard (Request -> Response) handlers, used as Vercel functions and by the Oracle server.
 import { streamChat, listModels, HttpError } from "./llm.js";
 import { deployWorkspace } from "./deploy.js";
+import { mcpRelay } from "./mcp.js";
 
 const MAX_BODY = 4_000_000; // room for a few compressed screenshots
 
@@ -80,5 +81,15 @@ export async function modelsHandler(request) {
     return json(request, 200, { models: await listModels(body) });
   } catch (e) {
     return json(request, e.status || 500, { error: e.status ? e.message : "Could not list models." });
+  }
+}
+
+export async function mcpHandler(request) {
+  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request) });
+  if (request.method !== "POST") return json(request, 405, { error: "Use POST." });
+  try {
+    return json(request, 200, await mcpRelay(await readJson(request, 200_000)));
+  } catch (e) {
+    return json(request, e.status || 500, { error: e.status ? e.message : "The plugin call failed. Try again." });
   }
 }

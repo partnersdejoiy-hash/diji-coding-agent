@@ -7,6 +7,7 @@ import { fileChanges } from "./workspace.js";
 import { commitChanges } from "./versions.js";
 import { browserCall, serverConfigured } from "./browser.js";
 import { activeSkills, skillContent } from "./skills.js";
+import { agentSection, mcpSection, callMcp } from "./agents.js";
 
 const MAX_STEPS = 6;
 const MAX_TOOLS_PER_STEP = 3;
@@ -110,7 +111,7 @@ function rulesSection(chat) {
 
 async function systemPrompt(chat, prompt) {
   const skills = activeSkills(prompt);
-  let text = BASE_PROMPT + (MODE_PROMPTS[state.settings.mode] || "") + (EFFORT[state.settings.effort] || "") + (STYLES[state.settings.style] || "") + memorySection() + projectSection(chat) + rulesSection(chat);
+  let text = BASE_PROMPT + (MODE_PROMPTS[state.settings.mode] || "") + (EFFORT[state.settings.effort] || "") + (STYLES[state.settings.style] || "") + agentSection(chat) + memorySection() + projectSection(chat) + rulesSection(chat) + mcpSection();
   if (chat.locked?.length) text += `\n\nLocked files (the user froze these; never rewrite or delete them): ${chat.locked.join(", ")}`;
   if (!serverConfigured()) text += "\n\nNote: the cloud browser is offline right now, so do not use diji-search or diji-browse. Answer from what you know and say when something may be out of date.";
   if (skills.length) {
@@ -172,6 +173,7 @@ async function stream(chat, system, onText, signal, override) {
 }
 
 function summarize(tool, args, result) {
+  if (tool === "mcp") return `<diji-result tool="mcp" server="${args.server}" name="${args.tool}"${result.isError ? ' error="true"' : ""}>\n${result.text}\n</diji-result>`;
   if (tool === "search") {
     const lines = result.links.slice(0, 10).map((l, i) => `${i + 1}. ${l.text} — ${l.href}`);
     return `<diji-result tool="search" query="${args.query}">\n${lines.join("\n") || result.text.slice(0, 3000)}\n</diji-result>`;
@@ -185,6 +187,17 @@ async function runTool(call) {
     if (!args.query) throw new Error("Search needs a query.");
     await browserCall("search", { query: args.query });
     return browserCall("read", { max: 6000 });
+  }
+  if (tool === "mcp") {
+    let input = {};
+    if (args.input) {
+      try {
+        input = JSON.parse(args.input);
+      } catch {
+        throw new Error("Plugin arguments must be a JSON object.");
+      }
+    }
+    return callMcp(args.server, args.tool, input);
   }
   if (tool === "browse") {
     if (!/^https?:\/\//.test(args.url || "")) throw new Error("Browse needs a full http(s) URL.");
@@ -248,7 +261,7 @@ export async function runAgent(chat, { onUpdate, onFiles, onMemory, signal }) {
         onMemory?.(text);
       }
     }
-    const calls = toolCalls(msg.content).filter((c) => c.tool === "search" || c.tool === "browse").slice(0, MAX_TOOLS_PER_STEP);
+    const calls = toolCalls(msg.content).filter((c) => c.tool === "search" || c.tool === "browse" || c.tool === "mcp").slice(0, MAX_TOOLS_PER_STEP);
     if (!calls.length || signal.aborted) return { files: changed };
     for (const call of calls) {
       const tm = { id: uid(), role: "tool", tool: call.tool, args: call.args, content: "", pending: true };

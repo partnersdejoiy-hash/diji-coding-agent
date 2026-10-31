@@ -34,6 +34,8 @@ const defaults = () => ({
     rules: "", // project rules sent with every request
     skills: [], // manually pinned skill ids
     customSkills: [], // { id, name, description, tags, content }
+    agents: [], // custom agents { id, name, icon, tone, description, prompt, starters }
+    mcp: [], // MCP plugin servers { id, name, url, token, enabled, tools }
     sidebarOpen: true,
   },
   notifications: [],

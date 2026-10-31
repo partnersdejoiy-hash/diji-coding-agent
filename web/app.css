@@ -1023,3 +1023,37 @@ body.on-page .main { justify-content: flex-start; }
 body.on-page .topbar { position: static; }
 body.on-page .chat-title { visibility: visible; }
 .model-eff { flex: none; font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.04em; padding: 1px 6px; border-radius: 6px; background: var(--blue-tint); color: var(--blue-ink); }
+
+/* ---------- agents + plugins ---------- */
+.page-h3 { font: 650 15px/1.3 var(--display); margin: 22px 0 10px; color: var(--ink-2); }
+.agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.agent-card { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; transition: transform 0.18s var(--ease), box-shadow 0.18s; }
+.agent-card:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--plate); }
+.agent-card strong { font: 650 16px/1.3 var(--display); letter-spacing: -0.015em; }
+.agent-card p { margin: 0; font-size: 13px; line-height: 1.45; flex: 1; }
+.agent-ic { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; color: var(--ink); }
+.agent-acts { display: flex; gap: 6px; margin-top: 6px; }
+.btn-primary.sm { height: 30px; padding: 0 11px; font-size: 12.5px; border-radius: 9px; gap: 6px; }
+.agent-chip { display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; padding: 2px 8px; border-radius: 7px; background: var(--pink-tint); color: var(--pink-ink); font-size: 12px; font-weight: 650; vertical-align: 1px; }
+.agent-form { overflow: auto; max-height: calc(100dvh - 48px); }
+.agent-form-body { padding: 4px 22px 0; }
+.agent-form-body textarea { width: 100%; resize: vertical; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font: inherit; font-size: 13.5px; }
+.agent-form-foot { display: flex; align-items: center; gap: 8px; padding: 12px 22px 18px; border-top: 1px solid var(--line); }
+.agent-form-foot .spacer { flex: 1; }
+.icon-pick { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+.icon-pick input { position: absolute; opacity: 0; pointer-events: none; }
+.icon-pick span { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: var(--surface-2); color: var(--ink-2); cursor: pointer; }
+.icon-pick input:checked + span { background: var(--surface); color: var(--ink); box-shadow: 2px 2px 0 var(--plate); outline: 1px solid var(--line-2); }
+.icon-pick input:focus-visible + span { outline: 2px solid var(--accent); }
+.mcp-item { display: flex; align-items: center; gap: 10px; padding: 10px 6px 10px 10px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 6px; }
+.mcp-item .switch { margin: 0; }
+.mcp-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mcp-info small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mcp-add { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin: 16px 0; padding: 14px; border: 1.5px dashed var(--line-2); border-radius: 14px; }
+.mcp-add .field { margin: 0; min-width: 120px; }
+.mcp-add .field.grow { flex: 1 1 220px; }
+.mcp-sugg { display: flex; flex-wrap: wrap; gap: 6px; }
+.mcp-card { display: block; width: 100%; }
+.mcp-card summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; }
+.mcp-card summary::-webkit-details-marker { display: none; }
+.mcp-out { margin: 10px 0 0; padding: 10px; max-height: 260px; overflow: auto; background: var(--code-bg); border-radius: 10px; font: 12px/1.5 var(--mono); white-space: pre-wrap; word-break: break-word; }

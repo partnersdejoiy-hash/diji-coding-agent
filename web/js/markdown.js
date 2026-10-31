@@ -66,10 +66,11 @@ export function segments(text) {
     const t = buf.join("\n");
     buf = [];
     let last = 0;
-    for (const m of t.matchAll(/<diji-error>([\s\S]*?)<\/diji-error>|<diji-(browse|search|delete|remember)\b([^>]*?)\/?>(?:\s*<\/diji-\2>)?/g)) {
+    for (const m of t.matchAll(/<diji-error>([\s\S]*?)<\/diji-error>|<diji-mcp\b([^>]*)>([\s\S]*?)<\/diji-mcp>|<diji-(browse|search|delete|remember)\b([^>]*?)\/?>(?:\s*<\/diji-\4>)?/g)) {
       if (m.index > last) out.push({ type: "text", text: t.slice(last, m.index) });
       if (m[1] !== undefined) out.push({ type: "error", text: m[1] });
-      else out.push({ type: "tool", tool: m[2], args: parseAttrs(m[3]) });
+      else if (m[2] !== undefined) out.push({ type: "tool", tool: "mcp", args: { ...parseAttrs(m[2]), input: m[3].trim() } });
+      else out.push({ type: "tool", tool: m[4], args: parseAttrs(m[5]) });
       last = m.index + m[0].length;
     }
     if (last < t.length) out.push({ type: "text", text: t.slice(last) });

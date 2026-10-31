@@ -8,7 +8,9 @@ const env = (k) => (typeof process !== "undefined" ? process.env[k] : undefined)
 function freeTargets(model) {
   const base = env("DIJI_FREE_BASE_URL");
   if (base) {
-    return [{ kind: "openai", baseUrl: base, apiKey: env("DIJI_FREE_API_KEY") || "", model: env("DIJI_FREE_MODEL") || model }];
+    // DIJI_FREE_MODEL may list several models, tried in order (free routes get rate limited).
+    const models = (env("DIJI_FREE_MODEL") || model).split(",").map((m) => m.trim()).filter(Boolean);
+    return models.map((m) => ({ kind: "openai", baseUrl: base, apiKey: env("DIJI_FREE_API_KEY") || "", model: m }));
   }
   return [
     { kind: "openai", baseUrl: "https://text.pollinations.ai/openai", chatPath: "", apiKey: "", model },

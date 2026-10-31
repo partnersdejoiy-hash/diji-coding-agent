@@ -5,6 +5,7 @@ import { icon } from "./icons.js";
 import { esc } from "./markdown.js";
 import { toast, askNotifyPermission } from "./notify.js";
 import { testModel, fetchModels } from "./agent.js";
+import { renderPlugins } from "./agents.js";
 import { allSkills, togglePinned, importSkill, removeSkill } from "./skills.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -24,7 +25,9 @@ function modalShell(dialog, title, id, body) {
     <div class="modal-head"><h2 id="${id}">${title}</h2><button class="icon-btn" data-close aria-label="Close">${icon("x")}</button></div>
     ${body}</div>`;
   dialog.querySelector("[data-close]").onclick = () => dialog.close();
-  dialog.onclick = (e) => e.target === dialog && dialog.close();
+  dialog.onclick = (e) => {
+    if (e.target === dialog) dialog.close();
+  };
   if (!dialog.open) dialog.showModal();
 }
 
@@ -44,6 +47,7 @@ export function openSettings(tab = currentTab, providerId) {
     ["deploy", "GitHub & Vercel", "github"],
     ["prefs", "Preferences", "settings"],
     ["memory", "Memory", "brain"],
+    ["plugins", "Plugins (MCP)", "plug"],
     ["data", "Data & privacy", "layers"],
   ];
   modalShell(
@@ -59,7 +63,7 @@ export function openSettings(tab = currentTab, providerId) {
   );
   dialog.querySelectorAll(".snav").forEach((b) => (b.onclick = () => openSettings(b.dataset.tab)));
   const body = $("#settings-body", dialog);
-  ({ models: renderModels, cloud: renderCloud, deploy: renderDeploy, prefs: renderPrefs, memory: renderMemory, data: renderData })[tab](body);
+  ({ models: renderModels, cloud: renderCloud, deploy: renderDeploy, prefs: renderPrefs, memory: renderMemory, plugins: renderPlugins, data: renderData })[tab](body);
 }
 
 function renderModels(body) {
