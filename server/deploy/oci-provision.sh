@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Creates everything Diji's server needs in an Oracle Cloud Always Free account, from OCI Cloud Shell.
-#   curl -fsSL https://raw.githubusercontent.com/partnersdejoiy-hash/diji-coding-agent/main/server/deploy/oci-provision.sh | bash
+#   curl -fsSLo /tmp/p.sh https://raw.githubusercontent.com/partnersdejoiy-hash/diji-coding-agent/main/server/deploy/oci-provision.sh && bash /tmp/p.sh < /dev/null
+#   (run it from a file: the oci CLI reads stdin, so "curl | bash" would swallow the script)
 # Network (VCN, internet gateway, ports 22/80/443), then one Always Free VM: Ampere A1 (2 OCPU, 12 GB),
 # falling back to E2.1.Micro when A1 capacity is unavailable. The VM installs Diji by itself on first boot.
 # Safe to re-run: it reuses resources named diji-*.

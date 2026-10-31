@@ -7,6 +7,12 @@ set -euo pipefail
 REPO="${DIJI_REPO:-https://github.com/partnersdejoiy-hash/diji-coding-agent.git}"
 DIR="${DIJI_DIR:-$HOME/diji-coding-agent}"
 
+if [ "$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)" -lt 4000 ] && ! swapon --show | grep -q .; then
+  echo "==> Adding 3 GB swap (small VM, Chromium needs headroom)"
+  sudo fallocate -l 3G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile >/dev/null && sudo swapon /swapfile
+  grep -q swapfile /etc/fstab || echo "/swapfile none swap sw 0 0" | sudo tee -a /etc/fstab >/dev/null
+fi
+
 echo "==> Installing Docker"
 if ! command -v docker >/dev/null; then
   curl -fsSL https://get.docker.com | sudo sh
@@ -37,7 +43,7 @@ cat > .env <<EOF
 DIJI_DOMAIN=$DIJI_DOMAIN
 DIJI_SERVER_TOKEN=$DIJI_SERVER_TOKEN
 CORS_ORIGIN=${CORS_ORIGIN:-*}
-DIJI_MAX_BROWSERS=${DIJI_MAX_BROWSERS:-4}
+DIJI_MAX_BROWSERS=${DIJI_MAX_BROWSERS:-$( [ "$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)" -lt 4000 ] && echo 1 || echo 4)}
 EOF
 
 echo "==> Building and starting (first build takes a few minutes)"
