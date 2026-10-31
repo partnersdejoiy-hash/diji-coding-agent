@@ -316,11 +316,18 @@ function messageEl(m) {
 }
 
 function fillTool(node, m) {
-  if (m.tool === "mcp") {
+  if (m.tool === "mcp" || m.tool.startsWith("gmail-")) {
+    const a = m.args || {};
+    const label = {
+      mcp: [`Using ${esc(a.server)} · ${esc(a.tool)}…`, `Used ${esc(a.server)} · ${esc(a.tool)}`, "plug"],
+      "gmail-search": [`Searching Gmail for “${esc(a.query || "inbox")}”…`, `Searched Gmail for “${esc(a.query || "inbox")}”`, "mail"],
+      "gmail-read": ["Opening an email…", "Read an email", "mail"],
+      "gmail-draft": ["Writing a Gmail draft…", `Saved a draft to ${esc(a.to || "")} in Gmail`, "mail"],
+    }[m.tool];
     const st = m.pending ? `<span class="spinner"></span>` : m.failed ? icon("alert", 15) : icon("check", 15);
     node.className = `msg tool${m.pending ? " pending" : ""}${m.failed ? " failed" : ""}`;
-    node.innerHTML = `<details class="tool-card mcp-card"><summary><span class="tool-ic">${icon("plug", 15)}</span>
-      <span class="tool-text"><span class="tool-label">${m.pending ? `Using ${esc(m.args.server)} · ${esc(m.args.tool)}…` : `Used ${esc(m.args.server)} · ${esc(m.args.tool)}`}</span>
+    node.innerHTML = `<details class="tool-card mcp-card"><summary><span class="tool-ic">${icon(label[2], 15)}</span>
+      <span class="tool-text"><span class="tool-label">${m.pending ? label[0] : label[1]}</span>
       ${m.failed ? `<span class="tool-err">${esc(m.failed)}</span>` : ""}</span><span class="tool-status">${st}</span></summary>
       ${m.content && !m.pending ? `<pre class="mcp-out">${esc(m.content.replace(/^<diji-result[^>]*>\n?|\n?<\/diji-result>$/g, "").slice(0, 4000))}</pre>` : ""}</details>`;
     return;

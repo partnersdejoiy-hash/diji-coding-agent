@@ -6,6 +6,7 @@ import { esc } from "./markdown.js";
 import { toast, askNotifyPermission } from "./notify.js";
 import { testModel, fetchModels } from "./agent.js";
 import { renderPlugins } from "./agents.js";
+import { gmailClientId, gmailConnected, gmailEmail, connectGmail, disconnectGmail } from "./gmail.js";
 import { allSkills, togglePinned, importSkill, removeSkill } from "./skills.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -49,6 +50,7 @@ export function openSettings(tab = currentTab, providerId) {
     ["memory", "Memory", "brain"],
     ["plugins", "Plugins (MCP)", "plug"],
     ["channels", "Chat apps", "phone"],
+    ["gmail", "Gmail", "mail"],
     ["data", "Data & privacy", "layers"],
   ];
   modalShell(
@@ -64,7 +66,7 @@ export function openSettings(tab = currentTab, providerId) {
   );
   dialog.querySelectorAll(".snav").forEach((b) => (b.onclick = () => openSettings(b.dataset.tab)));
   const body = $("#settings-body", dialog);
-  ({ models: renderModels, cloud: renderCloud, deploy: renderDeploy, prefs: renderPrefs, memory: renderMemory, plugins: renderPlugins, channels: renderChannels, data: renderData })[tab](body);
+  ({ models: renderModels, cloud: renderCloud, deploy: renderDeploy, prefs: renderPrefs, memory: renderMemory, plugins: renderPlugins, channels: renderChannels, gmail: renderGmail, data: renderData })[tab](body);
 }
 
 function renderModels(body) {
@@ -363,6 +365,46 @@ function renderMemory(body) {
     s.memory = [];
     save();
     renderMemory(body);
+  };
+}
+
+function renderGmail(body) {
+  const s = state.settings;
+  const on = gmailConnected();
+  body.innerHTML = `
+    <h3>Gmail</h3>
+    <p class="muted">Let Diji search and read your mail and write drafts. It never sends anything: drafts wait in Gmail for you. Access lasts about an hour and is never saved.</p>
+    ${on
+      ? `<p class="ok-line">${icon("check", 16)} Connected as <strong>${esc(gmailEmail())}</strong></p>
+         <div class="btn-row"><button type="button" class="btn-ghost" id="gdisc">${icon("x", 16)} Disconnect</button></div>`
+      : `<label class="field"><span>Google OAuth client ID</span>
+           <input id="gcid" value="${esc(s.googleClientId || "")}" placeholder="${esc(window.DIJI_CONFIG?.googleClientId ? "Using this site's client ID" : "1234-abc.apps.googleusercontent.com")}" spellcheck="false" autocomplete="off">
+           <small class="muted">Google Cloud Console → APIs &amp; Services: enable the Gmail API, set up the OAuth consent screen (add yourself as a test user), then Credentials → Create OAuth client ID → Web application, with <code>${esc(location.origin)}</code> as an authorised JavaScript origin.</small></label>
+         <div class="btn-row"><button type="button" class="btn-primary" id="gconn"${gmailClientId() ? "" : " disabled"}>${icon("mail", 16)} Connect Gmail</button></div>`}
+    <p class="test-out" id="gout" aria-live="polite"></p>`;
+  const cid = $("#gcid", body);
+  if (cid) cid.oninput = () => {
+    s.googleClientId = cid.value.trim();
+    save();
+    $("#gconn", body).disabled = !gmailClientId();
+  };
+  const conn = $("#gconn", body);
+  if (conn) conn.onclick = async () => {
+    conn.disabled = true;
+    $("#gout", body).textContent = "Waiting for Google…";
+    try {
+      const email = await connectGmail();
+      toast(`Gmail connected: ${email}`, "success", { keep: false });
+      renderGmail(body);
+    } catch (e) {
+      $("#gout", body).textContent = e.message;
+      conn.disabled = false;
+    }
+  };
+  const disc = $("#gdisc", body);
+  if (disc) disc.onclick = () => {
+    disconnectGmail();
+    renderGmail(body);
   };
 }
 

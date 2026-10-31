@@ -55,6 +55,12 @@ export const BUILTIN_AGENTS = [
     starters: ["I have an idea for a campus food app", "Make a landing page for my startup", "Outline my pitch deck"],
   },
   {
+    id: "email", name: "Email Assistant", icon: "mail", tone: "blue",
+    description: "Reads your Gmail, summarises what matters and drafts replies.",
+    prompt: "You are a calm, efficient email assistant. Use the Gmail tools to find and read the emails the user means. Summarise in short bullets: who, what they need, by when. Draft replies in the user's voice, short and polite, and save them as Gmail drafts only when asked. If Gmail is not connected, tell the user to connect it in Settings → Gmail.",
+    starters: ["Summarise my unread emails from today", "Any emails about interviews this week?", "Draft a polite follow-up to the last recruiter email"],
+  },
+  {
     id: "hinglish", name: "Hinglish Explainer", icon: "chat", tone: "ink",
     description: "Explains code and concepts in simple Hinglish.",
     prompt: "Always reply in friendly, simple Hinglish (Hindi written in Latin script mixed with English technical words). Explain code and concepts with desi examples, short paragraphs, and keep code and file names in English.",

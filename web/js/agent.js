@@ -9,6 +9,7 @@ import { browserCall, serverConfigured } from "./browser.js";
 import { activeSkills, skillContent } from "./skills.js";
 import { agentSection, mcpSection, callMcp } from "./agents.js";
 import { OFFICE_PROMPT } from "./office.js";
+import { gmailSection, gmailSearch, gmailRead, gmailDraft } from "./gmail.js";
 
 const MAX_STEPS = 6;
 const MAX_TOOLS_PER_STEP = 3;
@@ -112,7 +113,7 @@ function rulesSection(chat) {
 
 async function systemPrompt(chat, prompt) {
   const skills = activeSkills(prompt);
-  let text = BASE_PROMPT + OFFICE_PROMPT + (MODE_PROMPTS[state.settings.mode] || "") + (EFFORT[state.settings.effort] || "") + (STYLES[state.settings.style] || "") + agentSection(chat) + memorySection() + projectSection(chat) + rulesSection(chat) + mcpSection();
+  let text = BASE_PROMPT + OFFICE_PROMPT + (MODE_PROMPTS[state.settings.mode] || "") + (EFFORT[state.settings.effort] || "") + (STYLES[state.settings.style] || "") + agentSection(chat) + memorySection() + projectSection(chat) + rulesSection(chat) + mcpSection() + gmailSection();
   if (chat.locked?.length) text += `\n\nLocked files (the user froze these; never rewrite or delete them): ${chat.locked.join(", ")}`;
   if (!serverConfigured()) text += "\n\nNote: the cloud browser is offline right now, so do not use diji-search or diji-browse. Answer from what you know and say when something may be out of date.";
   if (skills.length) {
@@ -174,6 +175,9 @@ async function stream(chat, system, onText, signal, override) {
 }
 
 function summarize(tool, args, result) {
+  if (tool === "gmail-search") return `<diji-result tool="gmail-search" query="${args.query || ""}">\n${result.map((m) => `- id=${m.id}${m.unread ? " (unread)" : ""} | ${m.date} | ${m.from} | ${m.subject}\n  ${m.snippet}`).join("\n") || "No emails matched."}\n</diji-result>`;
+  if (tool === "gmail-read") return `<diji-result tool="gmail-read" id="${result.id}">\nFrom: ${result.from}\nTo: ${result.to}\nDate: ${result.date}\nSubject: ${result.subject}\n\n${result.text}\n</diji-result>`;
+  if (tool === "gmail-draft") return `<diji-result tool="gmail-draft">Draft saved in Gmail (id ${result.id}). The user can review and send it from Drafts.</diji-result>`;
   if (tool === "mcp") return `<diji-result tool="mcp" server="${args.server}" name="${args.tool}"${result.isError ? ' error="true"' : ""}>\n${result.text}\n</diji-result>`;
   if (tool === "search") {
     const lines = result.links.slice(0, 10).map((l, i) => `${i + 1}. ${l.text} — ${l.href}`);
@@ -189,6 +193,9 @@ async function runTool(call) {
     await browserCall("search", { query: args.query });
     return browserCall("read", { max: 6000 });
   }
+  if (tool === "gmail-search") return gmailSearch(args.query, args.max);
+  if (tool === "gmail-read") return gmailRead(args.id);
+  if (tool === "gmail-draft") return gmailDraft({ to: args.to, subject: args.subject, body: args.input, threadId: args.thread });
   if (tool === "mcp") {
     let input = {};
     if (args.input) {
@@ -262,7 +269,7 @@ export async function runAgent(chat, { onUpdate, onFiles, onMemory, signal }) {
         onMemory?.(text);
       }
     }
-    const calls = toolCalls(msg.content).filter((c) => c.tool === "search" || c.tool === "browse" || c.tool === "mcp").slice(0, MAX_TOOLS_PER_STEP);
+    const calls = toolCalls(msg.content).filter((c) => ["search", "browse", "mcp", "gmail-search", "gmail-read", "gmail-draft"].includes(c.tool)).slice(0, MAX_TOOLS_PER_STEP);
     if (!calls.length || signal.aborted) return { files: changed };
     for (const call of calls) {
       const tm = { id: uid(), role: "tool", tool: call.tool, args: call.args, content: "", pending: true };
