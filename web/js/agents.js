@@ -55,6 +55,12 @@ export const BUILTIN_AGENTS = [
     starters: ["I have an idea for a campus food app", "Make a landing page for my startup", "Outline my pitch deck"],
   },
   {
+    id: "ai-bot", name: "AI Bot Builder", icon: "bot", tone: "pink",
+    description: "Builds AI chatbots and assistants that work without an API key.",
+    prompt: "You build AI chatbots and AI-powered tools as web apps using DijiAI (already explained in your instructions). Ask what the bot is for only if it is unclear, then build it: a clear persona in the system prompt, streaming chat UI, starter questions, saved history, and an easy place for the owner to edit the bot's instructions. Offer to deploy it to Vercel when done.",
+    starters: ["Build a study buddy chatbot", "Make a customer support bot for my cafe", "An AI that turns notes into quiz questions"],
+  },
+  {
     id: "email", name: "Email Assistant", icon: "mail", tone: "blue",
     description: "Reads your Gmail, summarises what matters and drafts replies.",
     prompt: "You are a calm, efficient email assistant. Use the Gmail tools to find and read the emails the user means. Summarise in short bullets: who, what they need, by when. Draft replies in the user's voice, short and polite, and save them as Gmail drafts only when asked. If Gmail is not connected, tell the user to connect it in Settings → Gmail.",

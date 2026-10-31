@@ -45,7 +45,7 @@ export function parseAttrs(s) {
 }
 
 // Smaller models write tool calls in other common shapes; turn them into Diji's tags.
-const TOOL_NAMES = "browse|search|delete|remember|gmail-search|gmail-read";
+const TOOL_NAMES = "browse|search|delete|remember|gmail-search|gmail-read|handoff";
 function normalizeTools(t) {
   return t
     .replace(/<tool_call>\s*(\{[\s\S]*?\})\s*<\/tool_call>/g, (all, json) => {
@@ -85,7 +85,7 @@ export function segments(text) {
     const t = normalizeTools(buf.join("\n"));
     buf = [];
     let last = 0;
-    for (const m of t.matchAll(/<diji-error>([\s\S]*?)<\/diji-error>|<diji-(mcp|gmail-draft|edit)\b([^>]*)>([\s\S]*?)<\/diji-\2>|<diji-(browse|search|delete|remember|gmail-search|gmail-read)\b([^>]*?)\/?>(?:\s*<\/diji-\5>)?/g)) {
+    for (const m of t.matchAll(/<diji-error>([\s\S]*?)<\/diji-error>|<diji-(mcp|gmail-draft|edit)\b([^>]*)>([\s\S]*?)<\/diji-\2>|<diji-(browse|search|delete|remember|gmail-search|gmail-read|handoff)\b([^>]*?)\/?>(?:\s*<\/diji-\5>)?/g)) {
       if (m.index > last) out.push({ type: "text", text: t.slice(last, m.index) });
       if (m[1] !== undefined) out.push({ type: "error", text: m[1] });
       else if (m[2] !== undefined) out.push({ type: "tool", tool: m[2], args: { ...parseAttrs(m[3]), input: m[4].trim() } });

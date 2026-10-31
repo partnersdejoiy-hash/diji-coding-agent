@@ -5,7 +5,7 @@ import { providerById } from "../shared/catalog.js";
 import { segments, toolCalls } from "./markdown.js";
 import { fileChanges } from "./workspace.js";
 import { commitChanges, applyEdits } from "./versions.js";
-import { browserCall, serverConfigured } from "./browser.js";
+import { agentBrowserCall, serverConfigured, setController, waitForControl, cloud } from "./browser.js";
 import { activeSkills, skillContent, skillsReady } from "./skills.js";
 import { agentSection, mcpSection, callMcp } from "./agents.js";
 import { OFFICE_PROMPT } from "./office.js";
@@ -46,6 +46,7 @@ Using the web (you have a real cloud browser: Chromium running on Diji's server)
 - Read a page: <diji-browse url="https://example.com/docs"/>
 - After a tool tag, stop writing. The result arrives in the next message, then continue.
 - When the user asks you to open, visit, check or look at a website, always use diji-browse. Never say you cannot browse or have no browser.
+- When a page needs the person (logging in, a CAPTCHA, payment, personal details, a choice only they can make), hand the browser over: <diji-handoff reason="Please log in to GitHub, then give control back"/>. You continue when they give it back. Never type passwords or card numbers yourself.
 - Use the web for current docs, versions, APIs and errors you are unsure about. Cite the URLs you used.
 
 Context the user can attach:
@@ -121,10 +122,20 @@ function rulesSection(chat) {
   return parts.length ? `\n\n## Project rules (always follow)\n${parts.join("\n\n")}` : "";
 }
 
+// Apps Diji builds can call AI through Diji itself, so chatbots work without anyone's API key.
+const AI_PROMPT = () => `
+
+AI features in the apps you build (chatbots, assistants, summarisers, quiz makers, bots):
+- Load <script src="${location.origin}/diji-ai.js"></script> and call:
+  const reply = await DijiAI.chat({ system: "persona and rules", messages: [{ role: "user", content: text }], onToken: (soFar) => render(soFar) });
+  or the one-shot: const text = await DijiAI.ask("Summarise: ...");
+- It is free, needs no API key and streams. Keep the conversation in an array and send the last messages each turn. Show a typing state and handle errors with a friendly retry.
+- Never ask the user for an OpenAI or other API key for this, and never put keys in front-end code.`;
+
 async function systemPrompt(chat, prompt) {
   await skillsReady();
   const skills = activeSkills(prompt);
-  let text = BASE_PROMPT + OFFICE_PROMPT + (MODE_PROMPTS[state.settings.mode] || "") + (EFFORT[state.settings.effort] || "") + (STYLES[state.settings.style] || "") + agentSection(chat) + memorySection() + projectSection(chat) + rulesSection(chat) + mcpSection() + gmailSection();
+  let text = BASE_PROMPT + OFFICE_PROMPT + AI_PROMPT() + (MODE_PROMPTS[state.settings.mode] || "") + (EFFORT[state.settings.effort] || "") + (STYLES[state.settings.style] || "") + agentSection(chat) + memorySection() + projectSection(chat) + rulesSection(chat) + mcpSection() + gmailSection();
   if (chat.locked?.length) text += `\n\nLocked files (the user froze these; never rewrite or delete them): ${chat.locked.join(", ")}`;
   if (!serverConfigured()) text += "\n\nNote: the cloud browser is offline right now, so do not use diji-search or diji-browse. Answer from what you know and say when something may be out of date.";
   if (skills.length) {
@@ -200,6 +211,10 @@ function stripReopen(t) {
 }
 
 function summarize(tool, args, result) {
+  if (tool === "handoff") {
+    const p = result.page;
+    return `<diji-result tool="handoff">The person gave the browser back.${result.note ? ` Their note: ${result.note}` : ""}${p ? `\nNow on: ${p.url} (${p.title || ""})\n${(p.text || "").slice(0, 6000)}` : ""}\n</diji-result>`;
+  }
   if (tool === "gmail-search") return `<diji-result tool="gmail-search" query="${args.query || ""}">\n${result.map((m) => `- id=${m.id}${m.unread ? " (unread)" : ""} | ${m.date} | ${m.from} | ${m.subject}\n  ${m.snippet}`).join("\n") || "No emails matched."}\n</diji-result>`;
   if (tool === "gmail-read") return `<diji-result tool="gmail-read" id="${result.id}">\nFrom: ${result.from}\nTo: ${result.to}\nDate: ${result.date}\nSubject: ${result.subject}\n\n${result.text}\n</diji-result>`;
   if (tool === "gmail-draft") return `<diji-result tool="gmail-draft">Draft saved in Gmail (id ${result.id}). The user can review and send it from Drafts.</diji-result>`;
@@ -211,12 +226,20 @@ function summarize(tool, args, result) {
   return `<diji-result tool="browse" url="${result.url}" title="${(result.title || "").replace(/"/g, "'")}">\n${result.text.slice(0, 7000)}\n</diji-result>`;
 }
 
-async function runTool(call) {
+async function runTool(call, signal) {
   const { tool, args } = call;
   if (tool === "search") {
     if (!args.query) throw new Error("Search needs a query.");
-    await browserCall("search", { query: args.query });
-    return browserCall("read", { max: 6000 });
+    await agentBrowserCall("search", { query: args.query }, signal);
+    return agentBrowserCall("read", { max: 6000 }, signal);
+  }
+  if (tool === "handoff") {
+    cloud.note = "";
+    setController("you", args.reason || "Please take over, then give control back.");
+    document.dispatchEvent(new CustomEvent("diji:handoff", { detail: args.reason || "" }));
+    await waitForControl(signal);
+    const page = await agentBrowserCall("read", { max: 7000 }, signal).catch(() => null);
+    return { handoff: true, note: cloud.note || "", page };
   }
   if (tool === "gmail-search") return gmailSearch(args.query, args.max);
   if (tool === "gmail-read") return gmailRead(args.id);
@@ -234,8 +257,8 @@ async function runTool(call) {
   }
   if (tool === "browse") {
     if (!/^https?:\/\//.test(args.url || "")) throw new Error("Browse needs a full http(s) URL.");
-    await browserCall("open", { url: args.url });
-    return browserCall("read", { max: 9000 });
+    await agentBrowserCall("open", { url: args.url }, signal);
+    return agentBrowserCall("read", { max: 9000 }, signal);
   }
   return null;
 }
@@ -367,7 +390,7 @@ export async function runAgent(chat, { onUpdate, onFiles, onMemory, signal }) {
         onMemory?.(text);
       }
     }
-    let calls = toolCalls(msg.content).filter((c) => ["search", "browse", "mcp", "gmail-search", "gmail-read", "gmail-draft"].includes(c.tool)).slice(0, MAX_TOOLS_PER_STEP);
+    let calls = toolCalls(msg.content).filter((c) => ["search", "browse", "handoff", "mcp", "gmail-search", "gmail-read", "gmail-draft"].includes(c.tool)).slice(0, MAX_TOOLS_PER_STEP);
     // Smaller models sometimes claim they cannot browse. If the person asked to open a site, open it anyway.
     if (!calls.length && step === 0 && serverConfigured() && /\b(can(no|')?t|cannot|unable to|don'?t|do not|no access)\b[^.]{0,60}\b(brows|open|access|visit|cloud browser|internet|url|website)/i.test(msg.content)) {
       const url = (prompt.match(/\bhttps?:\/\/[^\s<>"')]+/i) || prompt.match(/\b(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s<>"')]*)?/i) || [])[0];
@@ -385,7 +408,7 @@ export async function runAgent(chat, { onUpdate, onFiles, onMemory, signal }) {
       chat.messages.push(tm);
       onUpdate(tm);
       try {
-        const result = await runTool(call);
+        const result = await runTool(call, signal);
         tm.content = summarize(call.tool, call.args, result);
         tm.shot = result.shot;
         tm.url = result.url;

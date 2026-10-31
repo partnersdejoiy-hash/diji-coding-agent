@@ -237,6 +237,7 @@ const TEMPLATES = [
   { t: "Three.js scene", p: "Start an interactive Three.js scene in one index.html using an import map to the three ES module CDN: a lit, slowly rotating hero object with orbit controls, a soft ground shadow and a resize-aware renderer." },
   { t: "Dashboard", p: "Start an analytics dashboard in plain HTML/CSS/JS with Chart.js from a CDN: KPI row with comparisons, a line chart over 30 days, a bar chart by category and a sortable table. Realistic sample data, light and dark theme." },
   { t: "Portfolio", p: "Start a personal developer portfolio: intro, selected projects with images, skills, experience timeline and a contact form with validation. Plain HTML/CSS/JS, fast and responsive." },
+  { t: "AI chatbot", p: "Build an AI chatbot web app in one index.html using DijiAI (no API key): a chat window with message bubbles, streaming replies, typing indicator, suggested starter questions, a system prompt the owner can edit in settings, chat history saved in localStorage, copy and clear buttons. Make it a friendly study buddy for college students. Responsive, light and dark mode." },
   { t: "2D game", p: "Start a small canvas game in one index.html: a player that moves with arrow keys and touch, collectible items, enemies, score, levels and a game-over screen with restart." },
 ];
 
@@ -317,10 +318,11 @@ function messageEl(m) {
 }
 
 function fillTool(node, m) {
-  if (m.tool === "mcp" || m.tool === "edit" || m.tool.startsWith("gmail-")) {
+  if (m.tool === "mcp" || m.tool === "edit" || m.tool === "handoff" || m.tool.startsWith("gmail-")) {
     const a = m.args || {};
     const label = {
       mcp: [`Using ${esc(a.server)} · ${esc(a.tool)}…`, `Used ${esc(a.server)} · ${esc(a.tool)}`, "plug"],
+      handoff: [`Diji needs you in the browser: ${esc(a.reason || "take over")}`, "You took over the browser and gave it back", "pointer"],
       edit: ["Checking edits…", "An edit did not match the file, so Diji is retrying", "pencil"],
       "gmail-search": [`Searching Gmail for “${esc(a.query || "inbox")}”…`, `Searched Gmail for “${esc(a.query || "inbox")}”`, "mail"],
       "gmail-read": ["Opening an email…", "Read an email", "mail"],
@@ -1689,3 +1691,11 @@ async function boot() {
 boot();
 
 document.addEventListener("diji:error", (e) => toast(e.detail, "error", { keep: false }));
+
+// Diji hands the cloud browser to the person (login, CAPTCHA…): show it and say why.
+document.addEventListener("diji:handoff", (e) => {
+  openPanel("browser");
+  toast(e.detail || "Take over the browser, then give it back.", "agent", { title: "Diji needs you in the browser", keep: true });
+  systemNotify("Diji needs you", e.detail || "Take over the cloud browser, then give it back.");
+});
+document.addEventListener("diji:browser-wait", () => toast("Diji is waiting for the browser. Give it back when you are done.", "info", { keep: false }));
