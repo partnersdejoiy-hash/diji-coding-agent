@@ -40,7 +40,7 @@ export function openSettings(tab = currentTab, providerId) {
   const dialog = $("#settings-modal");
   const tabs = [
     ["models", "Models & keys", "key"],
-    ["cloud", "Cloud server", "cloud"],
+    ["cloud", "Cloud browser", "cloud"],
     ["deploy", "GitHub & Vercel", "github"],
     ["prefs", "Preferences", "settings"],
     ["data", "Data & privacy", "layers"],
@@ -159,8 +159,8 @@ function renderModels(body) {
 function renderCloud(body) {
   const s = state.settings;
   body.innerHTML = `
-    <h3>Cloud server</h3>
-    <p class="muted">Your Diji server runs a real Chromium for web search, reading docs and testing. It runs free on an Oracle Cloud Always Free VM. Setup takes one command, see the README.</p>
+    <h3>Cloud browser</h3>
+    <p class="muted">Diji has its own Chromium in the cloud, already on for you: it searches, reads docs and tests what it builds. Nothing to set up. Only fill this in to use a private Diji server of your own (one command on an Oracle Always Free VM, see the README).</p>
     <label class="field"><span>Server URL</span><input id="surl" value="${esc(s.serverUrl)}" placeholder="https://141-148-1-2.sslip.io" spellcheck="false"></label>
     <label class="field"><span>Access token</span><input id="stoken" type="password" value="${esc(s.serverToken)}" placeholder="Printed by the setup script" autocomplete="off"></label>
     <fieldset class="field"><legend>Send chats through</legend>
@@ -179,7 +179,7 @@ function renderCloud(body) {
     const out = $("#sout", body);
     if (!s.serverUrl) {
       out.className = "test-out";
-      out.textContent = "Saved. The cloud browser stays off until you add a server.";
+      out.textContent = "Saved. Diji uses its built-in cloud browser.";
       return;
     }
     out.className = "test-out";

@@ -39,6 +39,8 @@ function load() {
       base.settings = { ...base.settings, ...saved.settings };
       // A deployment default fills in an empty saved server URL (people who never set one).
       if (!base.settings.serverUrl && window.DIJI_CONFIG?.serverUrl) base.settings.serverUrl = window.DIJI_CONFIG.serverUrl;
+      // An earlier default saved the shared server's URL without a token; that now means "built-in".
+      if (base.settings.serverUrl === "https://130-210-33-30.sslip.io" && !base.settings.serverToken) base.settings.serverUrl = "";
       base.notifications = Array.isArray(saved.notifications) ? saved.notifications.slice(0, 50) : [];
     }
     if (!base.settings.rememberKeys) {

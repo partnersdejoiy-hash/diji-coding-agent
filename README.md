@@ -18,7 +18,7 @@
 - **A real coding agent loop.** Diji writes complete files into a workspace, sees the current files on every turn, and edits by rewriting them. Tool calls are plain-text tags, so the agent works even on models without native function calling.
 - **Ship to your own GitHub and Vercel.** Add a GitHub token and a Vercel token in Settings → GitHub & Vercel, then push the workspace to a new or existing repo in one commit, or deploy it live to your Vercel account, straight from the workspace panel.
 - **Live preview + code + ZIP.** Multi-file web apps run instantly in a sandboxed preview (local CSS/JS inlined), open in a new tab, or download as a ZIP.
-- **Cloud browser.** A headless Chromium on your server lets Diji search the web and read docs, and lets you click, type and scroll a real page from the panel.
+- **Its own cloud browser.** Diji ships with a built-in Chromium in the cloud (an Oracle Always Free VM behind Diji's `/api/browser` proxy), so every visitor can search the web, read docs and click, type and scroll a real page from the panel with nothing to set up. Run your own private one with one command if you like.
 - **28 skills.** Playbooks for frontend design, minimalist/brutalist/brand-style UI, redesigns, responsive layouts, motion, Three.js, lazy-senior-dev coding, full output, debugging, code review, React/Next.js, backend APIs, databases, testing with Playwright, security, performance, accessibility, deploying to Vercel/Oracle/AWS, git, docs, charts, PDF/Word/Excel/PowerPoint, Python automation, AI apps, DSA interview prep and video prompts. Diji auto-picks up to three per message, you can pin your favourites, and you can **import any open-source `SKILL.md`** by link or paste.
 - **Notifications.** Toasts, a notification center, and system notifications when Diji finishes while you are in another tab.
 - **Every screen.** Built and tested from 320px phones to 1440px+ desktops, light and dark, keyboard and screen-reader friendly, reduced-motion aware.
@@ -81,6 +81,7 @@ Click **Deploy the app on Vercel** above, or import the repo in Vercel and set *
 |---|---|
 | `DIJI_FREE_BASE_URL`, `DIJI_FREE_API_KEY`, `DIJI_FREE_MODEL` | Point "Diji Free" at your own endpoint (e.g. an OpenRouter key with free models, or your Dejoiy AI Gateway). Defaults to a public keyless endpoint. |
 | `CORS_ORIGIN` | Restrict which sites may call the API (default `*`). |
+| `DIJI_BROWSER_URL`, `DIJI_SERVER_TOKEN` | Turn on the built-in cloud browser for every visitor: your Diji server's https URL and its token (kept server-side). |
 
 To give every visitor the cloud browser automatically, put your server URL in `web/config.js`.
 

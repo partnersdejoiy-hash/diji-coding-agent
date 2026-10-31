@@ -1,5 +1,5 @@
-// Deployment defaults. Set serverUrl to your Oracle Diji server (https) so every visitor gets the
-// cloud browser without opening Settings. People can still override it in Settings → Cloud.
+// Deployment defaults. Diji's built-in cloud browser is configured on the server side
+// (DIJI_BROWSER_URL + DIJI_SERVER_TOKEN env vars), so nothing is needed here.
 window.DIJI_CONFIG = {
-  serverUrl: "https://130-210-33-30.sslip.io",
+  serverUrl: "",
 };

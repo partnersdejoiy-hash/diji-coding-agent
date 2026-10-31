@@ -81,19 +81,22 @@ const server = http.createServer(async (req, res) => {
     const request = toRequest(req, ac.signal);
     if (req.method === "OPTIONS") return await send(res, new Response(null, { status: 204, headers: corsHeaders(request) }));
     if (path === "/api/health") return await send(res, json(request, 200, { ok: true, browser: true, auth: Boolean(TOKEN), name: "diji-server" }));
+    if (path === "/api/browser/health") return await send(res, json(request, 200, { ok: true, builtin: false }));
     if (TOKEN && req.headers["x-diji-token"] !== TOKEN) return await send(res, json(request, 401, { error: "This Diji server needs an access token. Add it in Settings → Cloud." }));
+    // Calls relayed by Diji's own proxy carry the visitor's IP, so limits stay per person.
+    const who = (TOKEN && req.headers["x-diji-client-ip"]) || ip;
     if (path === "/api/chat") {
-      if (limited(ip + ":chat", 40)) return await send(res, json(request, 429, { error: "Too many messages this minute. Take a breath and try again." }));
+      if (limited(who + ":chat", 40)) return await send(res, json(request, 429, { error: "Too many messages this minute. Take a breath and try again." }));
       return await send(res, await chatHandler(request));
     }
     if (path === "/api/models") return await send(res, await modelsHandler(request));
     if (path === "/api/deploy") {
-      if (limited(ip + ":deploy", 10)) return await send(res, json(request, 429, { error: "Too many deploys this minute." }));
+      if (limited(who + ":deploy", 10)) return await send(res, json(request, 429, { error: "Too many deploys this minute." }));
       return await send(res, await deployHandler(request));
     }
     const m = path.match(/^\/api\/browser\/([a-z]+)$/);
     if (m && req.method === "POST") {
-      if (limited(ip + ":browser", 90)) return await send(res, json(request, 429, { error: "The cloud browser is busy. Slow down a little." }));
+      if (limited(who + ":browser", 90)) return await send(res, json(request, 429, { error: "The cloud browser is busy. Slow down a little." }));
       let body;
       try {
         body = JSON.parse((await request.text()) || "{}");

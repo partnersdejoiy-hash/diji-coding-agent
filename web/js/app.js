@@ -6,7 +6,7 @@ import { diji, setMood } from "./mascot.js";
 import { esc, renderMarkdown, segments } from "./markdown.js";
 import { runAgent } from "./agent.js";
 import { renderPreview, renderCode, buildPreview, zip, downloadBlob } from "./workspace.js";
-import { renderBrowser, cloud, browserCall, serverConfigured } from "./browser.js";
+import { renderBrowser, cloud, browserCall, serverConfigured, checkCloud } from "./browser.js";
 import { loadSkills, activeSkills } from "./skills.js";
 import { openSettings, openSkills, onSettingsChange, isConnected } from "./settings.js";
 import { pushToGitHub, deployToVercel, githubToken, vercelToken, slug } from "./ship.js";
@@ -855,7 +855,7 @@ async function boot() {
   paintIcons();
   applyTheme();
   setSidebar(mq.wide.matches && state.settings.sidebarOpen !== false);
-  await loadSkills();
+  await Promise.all([loadSkills(), checkCloud()]);
   if (!activeChat() && state.chats.length) state.activeId = state.chats[0].id;
   renderAll();
   renderBell();

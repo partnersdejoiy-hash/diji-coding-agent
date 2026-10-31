@@ -129,3 +129,21 @@ test("deploy explains a bad Vercel token and rejects bad names", async () => {
   const name = await post("/api/deploy", { token: "vc-good", name: "My Site!", files: { "index.html": "x" } });
   assert.equal(name.status, 400);
 });
+
+test("Diji's built-in browser proxy relays to the Chromium server with the server-side token", async () => {
+  process.env.DIJI_BROWSER_URL = BASE;
+  process.env.DIJI_SERVER_TOKEN = "";
+  const { browserProxyHandler } = await import("../../web/api/_lib/browser-proxy.js");
+  const health = await browserProxyHandler(new Request("http://site/api/browser/health"));
+  assert.equal((await health.json()).ok, true);
+  const res = await browserProxyHandler(new Request("http://site/api/browser/open", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-forwarded-for": "203.0.113.9" },
+    body: JSON.stringify({ sessionId: "proxy-test-1", url: "data:text/html,<h1>via proxy</h1>" }),
+  }));
+  const j = await res.json();
+  assert.equal(res.status, 200, j.error);
+  assert.ok(j.shot.length > 1000);
+  const bad = await browserProxyHandler(new Request("http://site/api/browser/evil", { method: "POST", body: "{}" }));
+  assert.equal(bad.status, 404);
+});

@@ -11,20 +11,35 @@ const sessionId = (() => {
   }
 })();
 
-export const cloud = { last: null, busy: false, error: "", listeners: new Set() };
+export const cloud = { last: null, busy: false, error: "", available: true, listeners: new Set() };
 const emit = () => cloud.listeners.forEach((fn) => fn());
 
-export const serverConfigured = () => Boolean(state.settings.serverUrl);
+// Your own server when you set one with its token; otherwise Diji's built-in cloud browser.
+export const ownServer = () => Boolean(state.settings.serverUrl && state.settings.serverToken);
+const endpoint = (action) => (ownServer() ? state.settings.serverUrl.replace(/\/+$/, "") : "") + "/api/browser/" + action;
+export const serverConfigured = () => ownServer() || cloud.available;
+
+export async function checkCloud() {
+  if (ownServer()) return (cloud.available = true);
+  try {
+    const j = await (await fetch("/api/browser/health", { signal: AbortSignal.timeout(8000) })).json();
+    cloud.available = Boolean(j.ok);
+  } catch {
+    cloud.available = false;
+  }
+  emit();
+  return cloud.available;
+}
 
 export async function browserCall(action, body = {}) {
-  if (!serverConfigured()) throw new Error("The cloud browser is not connected. Add your Diji server in Settings → Cloud.");
+  if (!serverConfigured()) throw new Error("Diji's cloud browser is offline right now.");
   cloud.busy = true;
   cloud.error = "";
   emit();
   try {
-    const res = await fetch(state.settings.serverUrl.replace(/\/+$/, "") + "/api/browser/" + action, {
+    const res = await fetch(endpoint(action), {
       method: "POST",
-      headers: serverHeaders(),
+      headers: ownServer() ? serverHeaders() : { "content-type": "application/json" },
       body: JSON.stringify({ ...body, sessionId }),
     });
     const j = await res.json().catch(() => ({}));
@@ -32,7 +47,7 @@ export async function browserCall(action, body = {}) {
     if (j.shot) cloud.last = { url: j.url, title: j.title, shot: j.shot };
     return j;
   } catch (e) {
-    cloud.error = e.message === "Failed to fetch" ? "Could not reach your Diji server. Check the URL in Settings → Cloud." : e.message;
+    cloud.error = e.message === "Failed to fetch" ? (ownServer() ? "Could not reach your Diji server. Check the URL in Settings → Cloud." : "Could not reach Diji's cloud browser. Check your connection.") : e.message;
     throw new Error(cloud.error);
   } finally {
     cloud.busy = false;
@@ -42,9 +57,9 @@ export async function browserCall(action, body = {}) {
 
 export function renderBrowser(el, { openSettings }) {
   if (!serverConfigured()) {
-    el.innerHTML = `<div class="panel-empty">${icon("globe", 28)}<p><strong>Connect the cloud browser</strong></p>
-      <p>Diji drives a real Chromium on your free Oracle server to search, read docs and test what it builds.</p>
-      <button type="button" class="btn-primary" data-open-cloud>${icon("cloud", 16)} Connect server</button></div>`;
+    el.innerHTML = `<div class="panel-empty">${icon("globe", 28)}<p><strong>The cloud browser is offline</strong></p>
+      <p>Diji's Chromium is not answering right now. Try again in a minute, or connect your own Diji server.</p>
+      <button type="button" class="btn-ghost" data-open-cloud>${icon("cloud", 16)} Use my own server</button></div>`;
     el.querySelector("[data-open-cloud]").onclick = () => openSettings("cloud");
     return;
   }
