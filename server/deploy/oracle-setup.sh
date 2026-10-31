@@ -21,8 +21,10 @@ fi
 
 echo "==> Opening ports 80 and 443 in the VM firewall"
 # Oracle's Ubuntu images ship iptables rules that reject everything except SSH.
+# Insert before the first REJECT rule; its position differs between image versions.
+POS=$(sudo iptables -L INPUT --line-numbers -n | awk '/REJECT/ {print $1; exit}')
 for p in 80 443; do
-  sudo iptables -C INPUT -p tcp --dport "$p" -j ACCEPT 2>/dev/null || sudo iptables -I INPUT 6 -p tcp --dport "$p" -j ACCEPT
+  sudo iptables -C INPUT -p tcp --dport "$p" -j ACCEPT 2>/dev/null || sudo iptables -I INPUT "${POS:-1}" -p tcp --dport "$p" -j ACCEPT
 done
 if command -v netfilter-persistent >/dev/null; then sudo netfilter-persistent save; fi
 
