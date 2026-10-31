@@ -155,7 +155,7 @@ async function stream(chat, system, onText, signal, override) {
       system,
       messages: override?.messages || apiMessages(chat),
       ...(override?.maxTokens ? { maxTokens: override.maxTokens } : s.effort === "high" ? { maxTokens: 16000 } : s.effort === "low" ? { maxTokens: 4096 } : { maxTokens: 8192 }),
-      ...(override ? {} : { effort: s.effort }),
+      ...(override?.effort ? { effort: override.effort } : override ? {} : { effort: s.effort }),
     }),
   });
   if (!res.ok) {
@@ -270,6 +270,7 @@ export async function runAgent(chat, { onUpdate, onFiles, onMemory, signal }) {
             if (last?.role === "user") ms[ms.length - 1] = { ...last, content: typeof last.content === "string" ? last.content + nudge : [...last.content, { type: "text", text: nudge }] };
             return ms;
           })(),
+          effort: "low", // no more thinking on the retry
         });
       } catch {}
     }
@@ -284,6 +285,7 @@ export async function runAgent(chat, { onUpdate, onFiles, onMemory, signal }) {
           onUpdate(msg);
         }, signal, {
           messages: [...apiMessages(chat), { role: "user", content: `Your reply was cut off inside ${tail.path}. Continue exactly from the next character. Do not repeat anything, do not add a preamble and do not open a new code fence. Close the fence when ${tail.path} is complete.` }],
+          effort: "low",
         });
       } catch {
         break;
