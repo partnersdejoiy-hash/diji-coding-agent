@@ -122,23 +122,24 @@ async function* streamOpenAI(t, { system, messages, temperature, maxTokens, effo
     headers["HTTP-Referer"] = "https://github.com/partnersdejoiy-hash/diji-coding-agent";
     headers["X-Title"] = "Diji Coding Agent";
   }
-  const res = await connect(url, {
-    method: "POST",
-    headers,
-    signal,
-    body: JSON.stringify({
-      model: t.model,
-      stream: true,
-      temperature,
-      ...(maxTokens ? { max_tokens: maxTokens } : {}),
-      // Only OpenAI's own reasoning models accept this; other endpoints would reject an unknown field.
-      ...(effort && url.includes("api.openai.com") && /^(o\d|gpt-5)/.test(t.model) ? { reasoning_effort: effort } : {}),
-      // OpenRouter: keep reasoning models from spending the whole output budget on thinking.
-      // Free models tend to think until the output budget is gone: thinking is off unless effort is high.
-      ...(url.includes("openrouter.ai") ? { reasoning: effort === "high" ? { effort: "low" } : { enabled: false } } : {}),
-      messages: [...(system ? [{ role: "system", content: system }] : []), ...messages],
-    }),
-  });
+  const payload = {
+    model: t.model,
+    stream: true,
+    temperature,
+    ...(maxTokens ? { max_tokens: maxTokens } : {}),
+    // Only OpenAI's own reasoning models accept this; other endpoints would reject an unknown field.
+    ...(effort && url.includes("api.openai.com") && /^(o\d|gpt-5)/.test(t.model) ? { reasoning_effort: effort } : {}),
+    // OpenRouter: free models tend to think until the output budget is gone, so thinking is off
+    // unless effort is high. Models that cannot turn it off get the lowest effort instead (below).
+    ...(url.includes("openrouter.ai") ? { reasoning: effort === "high" ? { effort: "low" } : { enabled: false } } : {}),
+    messages: [...(system ? [{ role: "system", content: system }] : []), ...messages],
+  };
+  const send = () => connect(url, { method: "POST", headers, signal, body: JSON.stringify(payload) });
+  let res = await send();
+  if (res.status === 400 && payload.reasoning?.enabled === false && /reasoning/i.test(await res.clone().text())) {
+    payload.reasoning = { effort: "low" }; // "Reasoning is mandatory for this endpoint"
+    res = await send();
+  }
   if (!res.ok || !res.body) throw await upstreamError(res, new URL(url).hostname);
   const type = res.headers.get("content-type") || "";
   if (!type.includes("event-stream")) {
